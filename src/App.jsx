@@ -35,7 +35,15 @@ const loadFromFirebase = async () => {
     return null;
   }
 };
-// const saveToFirebase = async (payload) => { try { await setDoc(DOC_REF(), payload); } catch(_){} };
+
+const saveToFirebase = async (payload) => {
+  try {
+    await setDoc(DOC_REF(), payload);
+  } catch (e) {
+    console.error("Firestore save failed:", e);
+  }
+};
+
 
 export default function App() {
   const [view,setView]       = useState('login');
