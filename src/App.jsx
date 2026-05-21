@@ -26,7 +26,8 @@ const pill = (bg,color) => ({ fontSize:10,padding:'2px 7px',background:bg,border
 // Firebase helpers — single doc "raid" in collection "data"
 const DOC_REF = () => doc(db, 'data', 'raid');
 const loadFromFirebase = async () => { try { const snap=await getDoc(DOC_REF()); return snap.exists()?snap.data():null; } catch(_){return null;} };
-const saveToFirebase = async (payload) => { try { await setDoc(DOC_REF(), payload); } catch(_){} };
+catch(e) {console.error("Firestore save failed:", e);}
+// const saveToFirebase = async (payload) => { try { await setDoc(DOC_REF(), payload); } catch(_){} };
 
 export default function App() {
   const [view,setView]       = useState('login');
