@@ -102,28 +102,6 @@ export default function App() {
       setLoading(false);
     })();
   },[]);
-
-  const sanitizeForFirestore = (data) => {
-  const copy = structuredClone(data);
-
-  Object.keys(copy).forEach((member) => {
-    const entry = copy[member];
-
-    if (!entry || !Array.isArray(entry.runs)) {
-      console.error(`❌ Missing runs for member: ${member}`);
-      return;
-    }
-
-    entry.runs = Object.fromEntries(
-      entry.runs.map((bossRuns, bossIndex) => [
-        bossIndex,
-        bossRuns
-      ])
-    );
-  });
-
-  return copy;
-};
   
   //const persist = (data,bn,mems) => saveToFirebase({data,bossNames:bn,members:mems});
   const persist = (data,bn,mems) => {
@@ -131,7 +109,7 @@ export default function App() {
   console.log("🔥 FULL PAYLOAD =", { data, bossNames: bn, members: mems });
 
   saveToFirebase({
-  data: sanitizeForFirestore(data),
+  data,
   bossNames: bn,
   members: mems});};
   //const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members); setSaving(false); };
