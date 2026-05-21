@@ -38,11 +38,23 @@ const loadFromFirebase = async () => {
 
 const saveToFirebase = async (payload) => {
   try {
+    console.log("🔥 writing to Firestore...", payload);
+
     await setDoc(DOC_REF(), payload);
+
+    console.log("✅ write success");
   } catch (e) {
-    console.error("Firestore save failed:", e);
+    console.error("❌ Firestore save failed:", e);
   }
 };
+
+//const saveToFirebase = async (payload) => {
+//  try {
+ //   await setDoc(DOC_REF(), payload);
+//  } catch (e) {
+//    console.error("Firestore save failed:", e);
+//  }
+//};
 
 
 export default function App() {
