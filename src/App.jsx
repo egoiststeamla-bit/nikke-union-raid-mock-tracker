@@ -40,13 +40,42 @@ const saveToFirebase = async (payload) => {
   try {
     console.log("🔥 writing to Firestore...", payload);
 
-    await setDoc(DOC_REF(), payload);
+    // 🧯 FIX: remove nested arrays before saving
+    const cleaned = {
+      ...payload,
+      data: Object.fromEntries(
+        Object.entries(payload.data).map(([member, d]) => [
+          member,
+          {
+            ...d,
+            runs: d.runs.map(bossRuns =>
+              Array.isArray(bossRuns)
+                ? bossRuns.map(run => ({ ...run }))
+                : bossRuns
+            )
+          }
+        ])
+      )
+    };
+
+    await setDoc(DOC_REF(), cleaned);
 
     console.log("✅ write success");
   } catch (e) {
     console.error("❌ Firestore save failed:", e);
   }
 };
+//const saveToFirebase = async (payload) => {
+//  try {
+//    console.log("🔥 writing to Firestore...", payload);
+//
+//    await setDoc(DOC_REF(), payload);
+//
+//    console.log("✅ write success");
+//  } catch (e) {
+//    console.error("❌ Firestore save failed:", e);
+//  }
+//};
 
 //const saveToFirebase = async (payload) => {
 //  try {
