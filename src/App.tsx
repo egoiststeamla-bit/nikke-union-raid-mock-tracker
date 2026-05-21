@@ -753,7 +753,7 @@ function MemberView({
             Double hit this boss
           </label>
           <span style={{ fontSize: 11, color: bAct >= maxB ? C.gld : C.mut }}>
-            {bAct}/{maxB} actual for this boss
+            {bAct}/{maxB} Actual runs for this boss
           </span>
         </div>
 
@@ -1277,7 +1277,7 @@ function OverviewPanel({ allData, bossNames, members, activeBoss }) {
                 checked={hideActualUsed}
                 onChange={(e) => setHideActualUsed(e.target.checked)}
               />
-              Hide actual used
+              Hide actual run
             </label>
           </div>
         </div>
