@@ -80,7 +80,18 @@ export default function App() {
   console.log("🔥 FULL PAYLOAD =", { data, bossNames: bn, members: mems });
 
   saveToFirebase({ data, bossNames: bn, members: mems });};
-  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members); setSaving(false); };
+  //const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members); setSaving(false); };
+  const save = async(n,d) => {
+  setSaving(true);
+
+  const next = { ...allData, [n]: d };
+
+  // 🔥 PUT DEBUG HERE
+  console.log("🚨 CHECK NESTING:", JSON.stringify(next, null, 2));
+
+  setAll(next);
+  await persist(next,bossNames,members);
+  setSaving(false);};
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m); };
   const wipe = async() => { setAll({}); await persist({},bossNames,members); };
