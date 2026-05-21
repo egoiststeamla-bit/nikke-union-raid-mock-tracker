@@ -74,7 +74,12 @@ export default function App() {
     })();
   },[]);
 
-  const persist = (data,bn,mems) => saveToFirebase({data,bossNames:bn,members:mems});
+  //const persist = (data,bn,mems) => saveToFirebase({data,bossNames:bn,members:mems});
+  const persist = (data,bn,mems) => {
+  console.log("🔥 ABOUT TO SAVE allData =", data);
+  console.log("🔥 FULL PAYLOAD =", { data, bossNames: bn, members: mems });
+
+  saveToFirebase({ data, bossNames: bn, members: mems });};
   const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m); };
