@@ -106,17 +106,21 @@ export default function App() {
   const sanitizeForFirestore = (data) => {
   const copy = structuredClone(data);
 
-  if (!Array.isArray(copy.runs)) {
-    console.error("❌ runs is missing or invalid:", copy.runs);
-    copy.runs = [];
-  }
+  Object.keys(copy).forEach((member) => {
+    const entry = copy[member];
 
-  copy.runs = Object.fromEntries(
-    copy.runs.map((bossRuns, bossIndex) => [
-      bossIndex,
-      Array.isArray(bossRuns) ? bossRuns : []
-    ])
-  );
+    if (!entry || !Array.isArray(entry.runs)) {
+      console.error(`❌ Missing runs for member: ${member}`);
+      return;
+    }
+
+    entry.runs = Object.fromEntries(
+      entry.runs.map((bossRuns, bossIndex) => [
+        bossIndex,
+        bossRuns
+      ])
+    );
+  });
 
   return copy;
 };
