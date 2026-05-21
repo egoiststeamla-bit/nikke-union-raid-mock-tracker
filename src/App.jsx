@@ -106,11 +106,20 @@ export default function App() {
   const sanitizeForFirestore = (data) => {
   const copy = structuredClone(data);
 
+  if (!Array.isArray(copy.runs)) {
+    console.error("❌ runs is missing or invalid:", copy.runs);
+    copy.runs = [];
+  }
+
   copy.runs = Object.fromEntries(
-    copy.runs.map((bossRuns, bossIndex) => [bossIndex, bossRuns])
+    copy.runs.map((bossRuns, bossIndex) => [
+      bossIndex,
+      Array.isArray(bossRuns) ? bossRuns : []
+    ])
   );
 
-  return copy;};
+  return copy;
+};
   
   //const persist = (data,bn,mems) => saveToFirebase({data,bossNames:bn,members:mems});
   const persist = (data,bn,mems) => {
