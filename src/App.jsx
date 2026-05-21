@@ -29,40 +29,57 @@ const DOC_REF = () => doc(db, 'data', 'raid');
 const loadFromFirebase = async () => {
   try {
     const snap = await getDoc(DOC_REF());
-    return snap.exists() ? snap.data() : null;
+    if (!snap.exists()) return null;
+    const p = snap.data();
+    return {
+      bossNames: p.bossNames,
+      members: p.members,
+      data: Object.fromEntries(
+        Object.entries(p.data || {}).map(([member, d]) => [
+          member,
+          {
+            doubleHit: d.doubleHit,
+            runs: Array.from({ length: BOSSES }, (_, bi) => {
+              const bossRuns = d.runs[`boss_${bi}`] || {};
+              return Array.from({ length: Object.keys(bossRuns).length || UPR }, (_, ri) =>
+                bossRuns[`run_${ri}`] || emptyRun()
+              );
+            })
+          }
+        ])
+      )
+    };
   } catch (e) {
-    console.error("Firestore load failed:", e);
+    console.error('Firestore load failed:', e);
     return null;
   }
 };
 
 const saveToFirebase = async (payload) => {
   try {
-    console.log("🔥 writing to Firestore...", payload);
-
-    // 🧯 FIX: remove nested arrays before saving
     const cleaned = {
-      ...payload,
+      bossNames: payload.bossNames,
+      members: payload.members,
       data: Object.fromEntries(
         Object.entries(payload.data).map(([member, d]) => [
           member,
           {
-            ...d,
-            runs: d.runs.map(bossRuns =>
-              Array.isArray(bossRuns)
-                ? bossRuns.map(run => ({ ...run }))
-                : bossRuns
+            doubleHit: d.doubleHit,
+            runs: Object.fromEntries(
+              d.runs.map((bossRuns, bi) => [
+                `boss_${bi}`,
+                Object.fromEntries(
+                  bossRuns.map((run, ri) => [`run_${ri}`, run])
+                )
+              ])
             )
           }
         ])
       )
     };
-
     await setDoc(DOC_REF(), cleaned);
-
-    console.log("✅ write success");
   } catch (e) {
-    console.error("❌ Firestore save failed:", e);
+    console.error('Firestore save failed:', e);
   }
 };
 //const saveToFirebase = async (payload) => {
