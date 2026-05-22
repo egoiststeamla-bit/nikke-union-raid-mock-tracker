@@ -324,13 +324,12 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
       {rows.map(({m,valid,best},i)=>{
         const isExp=expand===m;
         return <div key={m} style={{borderBottom:`1px solid ${C.bdr}`}}>
-          <div style={{display:'flex',alignItems:'center',gap:6,padding:'7px 10px',cursor:'pointer',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}} onClick={()=>setExpand(isExp?null:m)}>
-            <span style={{fontSize:10,color:C.mut,width:16,flexShrink:0}}>{i+1}</span>
+          <div style={{display:'grid',gridTemplateColumns:'16px 1fr 44px 60px 16px',alignItems:'center',gap:6,padding:'7px 10px',cursor:'pointer',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}} onClick={()=>setExpand(isExp?null:m)}>
+            <span style={{fontSize:10,color:C.mut}}>{i+1}</span>
             <span style={{fontSize:12,fontWeight:700,color:C.txt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m}</span>
-            <span style={{fontSize:11,color:C.mut,flexShrink:0,width:36,textAlign:'center',marginLeft:6}}>{syncLevels[m]||'—'}</span>
-            <span style={{flex:1}}/>
-            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,flexShrink:0}}>{best?fmt(best):'—'}</span>
-            <span style={{fontSize:10,color:C.mut,marginLeft:4}}>{isExp?'▲':'▼'}</span>
+            <span style={{fontSize:11,color:C.txt,textAlign:'center'}}>{syncLevels[m]||'—'}</span>
+            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,textAlign:'right'}}>{best?fmt(best):'—'}</span>
+            <span style={{fontSize:10,color:C.mut,textAlign:'right'}}>{isExp?'▲':'▼'}</span>
           </div>
           {isExp&&<div style={{padding:'4px 10px 8px',display:'flex',flexDirection:'column',gap:4}}>
             {valid.length===0&&<p style={{fontSize:11,color:C.mut,margin:0}}>No valid runs.</p>}
