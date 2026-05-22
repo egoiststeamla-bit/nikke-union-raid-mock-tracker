@@ -309,17 +309,18 @@ function OverviewPanel({allData,bossNames,members,activeBoss}) {
   return <>
     <div style={{padding:'10px 12px 8px',borderBottom:`1px solid ${C.bdr}`,flexShrink:0}}>
       <span style={{fontSize:11,fontWeight:700,color:C.mut,textTransform:'uppercase',letterSpacing:1}}>Overview — {bossNames[activeBoss]}</span>
-      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8,flexWrap:'wrap'}}>
-        <input type='number' placeholder='Min dmg' value={minDamage} onChange={e=>setMinDamage(e.target.value)} style={{width:80,fontSize:11,padding:'4px 6px',borderRadius:6,border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt}}/>
-        <span style={{fontSize:11,color:C.mut}}>M</span>
-        <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8}}>
+        <input type='number' placeholder='Min dmg' value={minDamage} onChange={e=>setMinDamage(e.target.value)} style={{flex:1,minWidth:0,fontSize:11,padding:'4px 6px',borderRadius:6,border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt}}/>
+        <span style={{fontSize:11,color:C.mut,flexShrink:0}}>M</span>
+        <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer',flexShrink:0}}>
           <input type='checkbox' checked={hideConflicts} onChange={e=>setHideConflicts(e.target.checked)}/> Hide repeated
         </label>
-        <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer'}}>
+        <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer',flexShrink:0}}>
           <input type='checkbox' checked={hideActualUsed} onChange={e=>setHideActualUsed(e.target.checked)}/> Hide actual
         </label>
       </div>
     </div>
+    
     <div style={{overflowY:'auto',flex:1}}>
       {rows.map(({m,valid,best},i)=>{
         const isExp=expand===m;
