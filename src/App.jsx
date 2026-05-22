@@ -110,7 +110,7 @@ export default function App() {
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
   const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
-  const wipe = async() => { setAll({}); await persist({},bossNames,members,syncLevels); };
+  const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
   if(loading) return (
@@ -327,8 +327,8 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
           <div style={{display:'flex',alignItems:'center',gap:6,padding:'7px 10px',cursor:'pointer',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}} onClick={()=>setExpand(isExp?null:m)}>
             <span style={{fontSize:10,color:C.mut,width:16,flexShrink:0}}>{i+1}</span>
             <span style={{fontSize:12,fontWeight:700,color:C.txt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{m}</span>
-            <span style={{fontSize:11,color:C.mut,flexShrink:0,minWidth:28,textAlign:'right'}}>{syncLevels[m]||'—'}</span>
-            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,flexShrink:0,marginLeft:6}}>{best?fmt(best):'—'}</span>
+            <span style={{fontSize:11,color:C.txt,flexShrink:0,width:36,textAlign:'center'}}>{syncLevels[m]||'—'}</span>
+            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,flexShrink:0}}>{best?fmt(best):'—'}</span>
             <span style={{fontSize:10,color:C.mut,marginLeft:4}}>{isExp?'▲':'▼'}</span>
           </div>
           {isExp&&<div style={{padding:'4px 10px 8px',display:'flex',flexDirection:'column',gap:4}}>
@@ -475,7 +475,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         <div style={{overflowX:'auto',padding:'0 1rem 1.5rem'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
             <thead>
-              <tr>{['Member','Sync','Actuals','Best Mock',...(rows[0]?.bRuns||[]).map((_,ri)=>`Run ${ri+1}`),''].map((h,i)=>(
+              <tr>{['Member','Sync','Best Mock',...(rows[0]?.bRuns||[]).map((_,ri)=>`Run ${ri+1}`),'Actuals',''].map((h,i)=>(
                 <th key={i} style={{padding:'6px',textAlign:i<2?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap',minWidth:i>3&&i<(rows[0]?.bRuns||[]).length+4?90:undefined}}>{h}</th>
               ))}</tr>
             </thead>
@@ -483,10 +483,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
               {rows.sort((a,b)=>(b.best||0)-(a.best||0)).map(({m,bRuns,gu,bu,tot,best},i)=>(
                 <tr key={m} style={{background:i%2===0?'transparent':'rgba(255,255,255,0.02)',verticalAlign:'top'}}>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,fontWeight:700}}>{m}</td>
-                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.mut}}>{syncLevels[m]||'—'}</td>
-                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
-                    <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
-                  </td>
+                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>{syncLevels[m]||'—'}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.grn,fontWeight:700,textAlign:'center'}}>{best?fmt(best):'—'}</td>
                   {bRuns.map((run,ri)=>{
                     const locked=run.units.some(u=>u&&gu.has(u)&&!bu.has(u));
@@ -505,6 +502,9 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
                       </div>}
                     </td>;
                   })}
+                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
+                    <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
+                  </td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt}}>
                     <button style={{fontSize:11,padding:'3px 10px',borderRadius:5,cursor:'pointer',background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`}} onClick={()=>setEditMember(m)}>Edit</button>
                   </td>
