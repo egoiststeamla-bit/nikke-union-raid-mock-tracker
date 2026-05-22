@@ -502,14 +502,21 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
                       </div>}
                     </td>;
                   })}
-                  {bRuns.length>5&&(
-                    <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.mut,fontSize:11,textAlign:'center',minWidth:90}}>
-                      +{bRuns.length-5} more
-                    </td>
-                  )}
-                  {bRuns.length<=5&&Array.from({length:5-bRuns.length}).map((_,i)=>(
-                    <td key={`empty-${i}`} style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`}}/>
-                  ))}
+                  {bRuns.length>5
+                    ? <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,fontSize:11,textAlign:'center',minWidth:90,cursor:'pointer',color:C.mut}} onClick={()=>setExpandRun(expandRun===`${m}-more`?null:`${m}-more`)}>
+                        <span>{expandRun===`${m}-more`?'▲':(`+${bRuns.length-5} more`)}</span>
+                        {expandRun===`${m}-more`&&<div style={{marginTop:4,display:'flex',flexDirection:'column',gap:3}}>
+                          {bRuns.slice(5).map((run,ri)=>{
+                            const locked=run.units.some(u=>u&&gu.has(u)&&!bu.has(u));
+                            return <div key={ri} style={{fontSize:10,color:run.isActual?C.gld:run.excluded||locked?C.mut:C.txt,textDecoration:run.excluded||locked?'line-through':'none'}}>
+                              R{ri+6}: {run.damage?fmt(run.damage):'—'}
+                              {run.isActual&&' ✓'}
+                            </div>;
+                          })}
+                        </div>}
+                      </td>
+                    : <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`}}/>
+                  }
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
                     <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
                   </td>
