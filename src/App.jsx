@@ -133,7 +133,7 @@ export default function App() {
 
   if(view==='login')  return <LoginView members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')}/>;
   if(view==='sync')   return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }}/>;
-  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels)} getData={getData}/>;
+  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels)} getData={getData} onSaveSyncLevel={saveSync}/>;
   return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={()=>setView('login')}/>;
 }
 
@@ -200,9 +200,13 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
             <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
               <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
               <span style={{fontSize:11,color:C.mut,padding:'2px 8px',background:C.surf2,borderRadius:999}}>{saving?'saving…':'saved ✓'}</span>
+              <span style={{fontSize:11,color:C.mut}}>Sync:</span>
+              <input type='number' value={syncLevels[name]||''} placeholder='—'
+                style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
+                onChange={e=>onSyncEdit&&onSyncEdit(name,e.target.value)}/>
             </div>
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
@@ -349,7 +353,7 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   </>;
 }
 
-function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData}) {
+function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
@@ -379,7 +383,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
     </div>
   );
 
-  if(editMember) return <MemberView name={editMember} data={getData(editMember)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={false} onSave={d=>onOverride(editMember,d)} onBack={()=>setEditMember(null)}/>;
+  if(editMember) return <MemberView name={editMember} data={getData(editMember)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={false} onSave={d=>onOverride(editMember,d)} onBack={()=>setEditMember(null)} onSyncEdit={onSaveSyncLevel}/>;
 
   const rows=members.map(m=>{
     const d=allData[m]??emptyData(),gu=allActualUnits(d),bu=bossActualUnits(d,boss);
