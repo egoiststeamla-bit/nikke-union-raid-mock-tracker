@@ -17,13 +17,12 @@ const totalActuals = (d) => d.runs.flat().filter(r=>r.isActual).length;
 const bossActualCount = (d,bi) => d.runs[bi].filter(r=>r.isActual).length;
 const runIsBlocked = (run,data,boss,ri) => { const s=new Set(); data.runs.forEach((br,bi)=>br.forEach((r,i)=>{if(r.isActual&&!(bi===boss&&i===ri))r.units.forEach(u=>u&&s.add(u));})); return run.units.some(u=>u&&s.has(u)); };
 const deepSet = (obj,path,val) => { const d=JSON.parse(JSON.stringify(obj)); let c=d; for(let i=0;i<path.length-1;i++) c=c[path[i]]; c[path[path.length-1]]=val; return d; };
-const exportCSV = (allData,bossNames,members) => { const rows=[['Member','Boss','Run#','Is Actual','Damage','Unit1','Unit2','Unit3','Unit4','Unit5']]; members.forEach(m=>{const d=allData[m]??emptyData(); d.runs.forEach((br,bi)=>br.forEach((run,ri)=>{if(!run.damage&&run.units.every(u=>!u))return; rows.push([m,bossNames[bi],ri+1,run.isActual?'YES':'',run.damage||'',...run.units]);}));}); const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`union_raid_${new Date().toISOString().slice(0,10)}.csv`; a.click(); };
+const exportCSV = (allData,bossNames,members,syncLevels) => { const rows=[['Member','Sync','Boss','Run#','Is Actual','Damage','Unit1','Unit2','Unit3','Unit4','Unit5']]; members.forEach(m=>{const d=allData[m]??emptyData(); d.runs.forEach((br,bi)=>br.forEach((run,ri)=>{if(!run.damage&&run.units.every(u=>!u))return; rows.push([m,syncLevels[m]||'',bossNames[bi],ri+1,run.isActual?'YES':'',run.damage||'',...run.units]);}));}); const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`union_raid_${new Date().toISOString().slice(0,10)}.csv`; a.click(); };
 
 const C = { bg:'#0f1117',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8eaf0',mut:'#6b7280',grn:'#4ade80',gld:'#fbbf24',red:'#f87171',dang:'#7f1d1d',succ:'#14532d' };
 const f = { fontFamily:'Helvetica, Arial, sans-serif' };
 const pill = (bg,color) => ({ fontSize:10,padding:'2px 7px',background:bg,border:`1px solid ${C.bdr}`,borderRadius:999,color,whiteSpace:'nowrap' });
 
-// Firebase helpers — single doc "raid" in collection "data"
 const DOC_REF = () => doc(db, 'data', 'raid');
 
 const loadFromFirebase = async () => {
@@ -34,14 +33,15 @@ const loadFromFirebase = async () => {
     return {
       bossNames: p.bossNames,
       members: p.members,
+      syncLevels: p.syncLevels || {},
       data: Object.fromEntries(
         Object.entries(p.data || {}).map(([member, d]) => [
           member,
           {
             doubleHit: d.doubleHit,
             runs: Array.from({ length: BOSSES }, (_, bi) => {
-              const bossRuns = d.runs[`boss_${bi}`] || {};
-              return Array.from({ length: Object.keys(bossRuns).length || UPR }, (_, ri) =>
+              const bossRuns = d.runs?.[`boss_${bi}`] || {};
+              return Array.from({ length: Math.max(Object.keys(bossRuns).length, UPR) }, (_, ri) =>
                 bossRuns[`run_${ri}`] || emptyRun()
               );
             })
@@ -60,6 +60,7 @@ const saveToFirebase = async (payload) => {
     const cleaned = {
       bossNames: payload.bossNames,
       members: payload.members,
+      syncLevels: payload.syncLevels || {},
       data: Object.fromEntries(
         Object.entries(payload.data).map(([member, d]) => [
           member,
@@ -68,9 +69,7 @@ const saveToFirebase = async (payload) => {
             runs: Object.fromEntries(
               d.runs.map((bossRuns, bi) => [
                 `boss_${bi}`,
-                Object.fromEntries(
-                  bossRuns.map((run, ri) => [`run_${ri}`, run])
-                )
+                Object.fromEntries(bossRuns.map((run, ri) => [`run_${ri}`, run]))
               ])
             )
           }
@@ -82,69 +81,36 @@ const saveToFirebase = async (payload) => {
     console.error('Firestore save failed:', e);
   }
 };
-//const saveToFirebase = async (payload) => {
-//  try {
-//    console.log("🔥 writing to Firestore...", payload);
-//
-//    await setDoc(DOC_REF(), payload);
-//
-//    console.log("✅ write success");
-//  } catch (e) {
-//    console.error("❌ Firestore save failed:", e);
-//  }
-//};
-
-//const saveToFirebase = async (payload) => {
-//  try {
- //   await setDoc(DOC_REF(), payload);
-//  } catch (e) {
-//    console.error("Firestore save failed:", e);
-//  }
-//};
-
 
 export default function App() {
-  const [view,setView]       = useState('login');
-  const [member,setMember]   = useState(null);
-  const [allData,setAll]     = useState({});
-  const [bossNames,setBN]    = useState([...DEFAULT_BOSS_NAMES]);
-  const [members,setMembers] = useState([...DEFAULT_MEMBERS]);
-  const [loading,setLoading] = useState(true);
-  const [saving,setSaving]   = useState(false);
+  const [view,setView]           = useState('login');
+  const [member,setMember]       = useState(null);
+  const [allData,setAll]         = useState({});
+  const [bossNames,setBN]        = useState([...DEFAULT_BOSS_NAMES]);
+  const [members,setMembers]     = useState([...DEFAULT_MEMBERS]);
+  const [syncLevels,setSyncLevels] = useState({});
+  const [loading,setLoading]     = useState(true);
+  const [saving,setSaving]       = useState(false);
 
   useEffect(()=>{
     (async()=>{
       const p = await loadFromFirebase();
-      if(p){ setAll(p.data||{}); setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]); setMembers(p.members||[...DEFAULT_MEMBERS]); }
+      if(p){
+        setAll(p.data||{});
+        setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]);
+        setMembers(p.members||[...DEFAULT_MEMBERS]);
+        setSyncLevels(p.syncLevels||{});
+      }
       setLoading(false);
     })();
   },[]);
-  
-  //const persist = (data,bn,mems) => saveToFirebase({data,bossNames:bn,members:mems});
-  const persist = (data,bn,mems) => {
-  console.log("🔥 ABOUT TO SAVE allData =", data);
-  console.log("🔥 FULL PAYLOAD =", { data, bossNames: bn, members: mems });
 
-  saveToFirebase({
-  data,
-  bossNames: bn,
-  members: mems});};
-  //const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members); setSaving(false); };
-  
-  const save = async(n,d) => {
-  setSaving(true);
-
-  const next = { ...allData, [n]: d };
-
-  // 🔥 PUT DEBUG HERE
-  console.log("🚨 CHECK NESTING:", JSON.stringify(next, null, 2));
-
-  setAll(next);
-  await persist(next,bossNames,members);
-  setSaving(false);};
-  const saveBN = async(n) => { setBN(n); await persist(allData,n,members); };
-  const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m); };
-  const wipe = async() => { setAll({}); await persist({},bossNames,members); };
+  const persist = (data,bn,mems,syncs) => saveToFirebase({data,bossNames:bn,members:mems,syncLevels:syncs});
+  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
+  const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
+  const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
+  const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
+  const wipe = async() => { setAll({}); await persist({},bossNames,members,syncLevels); };
   const getData = n => allData[n]??emptyData();
 
   if(loading) return (
@@ -155,9 +121,20 @@ export default function App() {
     </div>
   );
 
-  if(view==='login') return <LoginView members={members} onMember={n=>{setMember(n);setView('member');}} onAdmin={()=>setView('admin')}/>;
-  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members)} getData={getData}/>;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} saving={saving} onSave={d=>save(member,d)} onBack={()=>setView('login')}/>;
+  // After selecting name: if sync already set, go straight to member view; otherwise show sync prompt
+  const handleMemberSelect = (name) => {
+    setMember(name);
+    if(syncLevels[name]) {
+      setView('member');
+    } else {
+      setView('sync');
+    }
+  };
+
+  if(view==='login')  return <LoginView members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')}/>;
+  if(view==='sync')   return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }}/>;
+  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels)} getData={getData}/>;
+  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={()=>setView('login')}/>;
 }
 
 function LoginView({members,onMember,onAdmin}) {
@@ -185,7 +162,30 @@ function LoginView({members,onMember,onAdmin}) {
   );
 }
 
-function MemberView({name,data,bossNames,allData,members,saving,onSave,onBack}) {
+function SyncView({name,onConfirm}) {
+  const [val,setVal]=useState('');
+  return (
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
+        <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
+          <h2 style={{fontSize:18,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
+          <p style={{fontSize:13,color:C.mut,margin:'6px 0 0'}}>Enter your sync level to continue</p>
+        </div>
+        <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
+          <label style={{fontSize:11,color:C.mut,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Your sync level</label>
+          <input type='number' placeholder='e.g. 160' value={val} onChange={e=>setVal(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&val&&onConfirm(val)}
+            style={{width:'100%',padding:'10px 12px',fontSize:20,border:`1px solid ${C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box',textAlign:'center'}}/>
+          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer',opacity:val?1:0.4}} disabled={!val} onClick={()=>onConfirm(val)}>
+            Continue →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack}) {
   const [boss,setBoss]=useState(0);
   const upd=(path,val)=>onSave(deepSet(data,path,val));
   const gu=allActualUnits(data),tot=totalActuals(data),dh=data.doubleHit[boss];
@@ -227,7 +227,7 @@ function MemberView({name,data,bossNames,allData,members,saving,onSave,onBack}) 
           <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:C.gld,cursor:'pointer'}}>
             <input type='checkbox' checked={dh} onChange={e=>{
               const next=deepSet(data,['doubleHit',boss],e.target.checked);
-              if(!e.target.checked){let f=0;next.runs[boss]=next.runs[boss].map(r=>{if(r.isActual){f++;if(f===2)return{...r,isActual:false};}return r;});}
+              if(!e.target.checked){let fnd=0;next.runs[boss]=next.runs[boss].map(r=>{if(r.isActual){fnd++;if(fnd===2)return{...r,isActual:false};}return r;});}
               onSave(next);
             }}/> Double hit this boss
           </label>
@@ -281,14 +281,14 @@ function MemberView({name,data,bossNames,allData,members,saving,onSave,onBack}) 
       </div>
 
       <div style={{flex:'1 1 260px',minWidth:240,maxWidth:380,position:'sticky',top:'2rem',height:'calc(100vh - 4rem)',background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        <OverviewPanel allData={allData} bossNames={bossNames} members={members} activeBoss={boss}/>
+        <OverviewPanel allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} activeBoss={boss}/>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
-function OverviewPanel({allData,bossNames,members,activeBoss}) {
+function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   const [expand,setExpand]=useState(null);
   const [hideConflicts,setHideConflicts]=useState(false);
   const [minDamage,setMinDamage]=useState('');
@@ -320,16 +320,16 @@ function OverviewPanel({allData,bossNames,members,activeBoss}) {
         </label>
       </div>
     </div>
-    
     <div style={{overflowY:'auto',flex:1}}>
       {rows.map(({m,valid,best},i)=>{
         const isExp=expand===m;
         return <div key={m} style={{borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{display:'flex',alignItems:'center',gap:6,padding:'7px 10px',cursor:'pointer',background:i%2===0?'transparent':'rgba(255,255,255,0.02)'}} onClick={()=>setExpand(isExp?null:m)}>
             <span style={{fontSize:10,color:C.mut,width:16,flexShrink:0}}>{i+1}</span>
-            <span style={{fontSize:12,fontWeight:700,color:C.txt,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m}</span>
-            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,flexShrink:0}}>{best?fmt(best):'—'}</span>
-            <span style={{fontSize:10,color:C.mut}}>{isExp?'▲':'▼'}</span>
+            <span style={{fontSize:12,fontWeight:700,color:C.txt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{m}</span>
+            <span style={{fontSize:11,color:C.mut,flexShrink:0,minWidth:28,textAlign:'right'}}>{syncLevels[m]||'—'}</span>
+            <span style={{fontSize:12,fontWeight:700,color:best?C.grn:C.mut,flexShrink:0,marginLeft:6}}>{best?fmt(best):'—'}</span>
+            <span style={{fontSize:10,color:C.mut,marginLeft:4}}>{isExp?'▲':'▼'}</span>
           </div>
           {isExp&&<div style={{padding:'4px 10px 8px',display:'flex',flexDirection:'column',gap:4}}>
             {valid.length===0&&<p style={{fontSize:11,color:C.mut,margin:0}}>No valid runs.</p>}
@@ -349,7 +349,7 @@ function OverviewPanel({allData,bossNames,members,activeBoss}) {
   </>;
 }
 
-function AdminView({allData,bossNames,members,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData}) {
+function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
@@ -379,7 +379,7 @@ function AdminView({allData,bossNames,members,onBack,onOverride,onSaveBN,onSaveM
     </div>
   );
 
-  if(editMember) return <MemberView name={editMember} data={getData(editMember)} bossNames={bossNames} allData={allData} members={members} saving={false} onSave={d=>onOverride(editMember,d)} onBack={()=>setEditMember(null)}/>;
+  if(editMember) return <MemberView name={editMember} data={getData(editMember)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={false} onSave={d=>onOverride(editMember,d)} onBack={()=>setEditMember(null)}/>;
 
   const rows=members.map(m=>{
     const d=allData[m]??emptyData(),gu=allActualUnits(d),bu=bossActualUnits(d,boss);
@@ -413,7 +413,7 @@ function AdminView({allData,bossNames,members,onBack,onOverride,onSaveBN,onSaveM
         {confirmWipe&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
           <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:12,padding:'1.5rem',maxWidth:380,width:'90%'}}>
             <h3 style={{margin:'0 0 8px',color:C.txt}}>Start new Union Raid?</h3>
-            <p style={{fontSize:13,color:C.mut,margin:'0 0 16px'}}>Exports current data then wipes all run inputs. Boss names and member list are kept.</p>
+            <p style={{fontSize:13,color:C.mut,margin:'0 0 16px'}}>Exports current data then wipes all run inputs. Boss names, member list and sync levels are kept.</p>
             <div style={{display:'flex',gap:8}}>
               <button style={{flex:1,padding:11,fontSize:13,fontWeight:600,background:C.red,color:'#fff',border:'none',borderRadius:8,cursor:'pointer'}} onClick={()=>{onExport();onWipe();setConfirmWipe(false);}}>Export &amp; Wipe</button>
               <button style={{flex:1,padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={()=>setConfirmWipe(false)}>Cancel</button>
@@ -475,14 +475,15 @@ function AdminView({allData,bossNames,members,onBack,onOverride,onSaveBN,onSaveM
         <div style={{overflowX:'auto',padding:'0 1rem 1.5rem'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
             <thead>
-              <tr>{['Member','Actuals','Best Mock',...(rows[0]?.bRuns||[]).map((_,ri)=>`Run ${ri+1}`),'Status',''].map((h,i)=>(
-                <th key={i} style={{padding:'6px',textAlign:i===0?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap',minWidth:i>2&&i<(rows[0]?.bRuns||[]).length+3?90:undefined}}>{h}</th>
+              <tr>{['Member','Sync','Actuals','Best Mock',...(rows[0]?.bRuns||[]).map((_,ri)=>`Run ${ri+1}`),''].map((h,i)=>(
+                <th key={i} style={{padding:'6px',textAlign:i<2?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap',minWidth:i>3&&i<(rows[0]?.bRuns||[]).length+4?90:undefined}}>{h}</th>
               ))}</tr>
             </thead>
             <tbody>
               {rows.sort((a,b)=>(b.best||0)-(a.best||0)).map(({m,bRuns,gu,bu,tot,best},i)=>(
                 <tr key={m} style={{background:i%2===0?'transparent':'rgba(255,255,255,0.02)',verticalAlign:'top'}}>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,fontWeight:700}}>{m}</td>
+                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.mut}}>{syncLevels[m]||'—'}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
                     <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
                   </td>
@@ -504,7 +505,6 @@ function AdminView({allData,bossNames,members,onBack,onOverride,onSaveBN,onSaveM
                       </div>}
                     </td>;
                   })}
-                  <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>{tot>=MAX_ACTUAL?'✅':tot===0?'⬜':`⏳${tot}/${MAX_ACTUAL}`}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt}}>
                     <button style={{fontSize:11,padding:'3px 10px',borderRadius:5,cursor:'pointer',background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`}} onClick={()=>setEditMember(m)}>Edit</button>
                   </td>
