@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from './firebase';
+import { db } from './firebase.dev';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
