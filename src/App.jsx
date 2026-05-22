@@ -475,7 +475,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         <div style={{overflowX:'auto',padding:'0 1rem 1.5rem'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
             <thead>
-              <tr>{['Member','Sync','Best Mock',...(rows[0]?.bRuns||[]).map((_,ri)=>`Run ${ri+1}`),'Actuals',''].map((h,i)=>(
+              <tr>{['Member','Sync','Best Mock','Run 1','Run 2','Run 3','Run 4','Run 5', rows.some(r=>r.bRuns.length>5)?'+more':'', 'Actuals',''].map((h,i)=>(
                 <th key={i} style={{padding:'6px',textAlign:i<2?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap',minWidth:i>3&&i<(rows[0]?.bRuns||[]).length+4?90:undefined}}>{h}</th>
               ))}</tr>
             </thead>
@@ -485,7 +485,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,fontWeight:700}}>{m}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>{syncLevels[m]||'—'}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.grn,fontWeight:700,textAlign:'center'}}>{best?fmt(best):'—'}</td>
-                  {bRuns.map((run,ri)=>{
+                  {bRuns.slice(0,5).map((run,ri)=>{
                     const locked=run.units.some(u=>u&&gu.has(u)&&!bu.has(u));
                     const key=`${m}-${ri}`,isExp=expandRun===key;
                     return <td key={ri} style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,fontSize:11,cursor:'pointer',minWidth:90}} onClick={()=>setExpandRun(isExp?null:key)}>
@@ -502,6 +502,14 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
                       </div>}
                     </td>;
                   })}
+                  {bRuns.length>5&&(
+                    <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.mut,fontSize:11,textAlign:'center',minWidth:90}}>
+                      +{bRuns.length-5} more
+                    </td>
+                  )}
+                  {bRuns.length<=5&&Array.from({length:5-bRuns.length}).map((_,i)=>(
+                    <td key={`empty-${i}`} style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`}}/>
+                  ))}
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
                     <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
                   </td>
