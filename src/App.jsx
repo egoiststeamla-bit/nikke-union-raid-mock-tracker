@@ -185,7 +185,7 @@ function SyncView({name,onConfirm}) {
   );
 }
 
-function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack}) {
+function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit}) {
   const [boss,setBoss]=useState(0);
   const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
