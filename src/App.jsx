@@ -8,7 +8,6 @@ const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
 // Default unions — admin can add/remove/rename these
 const DEFAULT_UNIONS = [
   { id: 'union1', name: 'Union 1', members: ['Ada','Adema','Anda','Cray','Creature','Dragg','Egoist','Elija','John','Jose','Kenty','Klein','Kuhaku','Mailibub','Malice50','Metamor','Mikohara','Nasury','Niotrink','No','Presens','Pyra','Ranzuken','Reign','Shareph','Surdax','Thearic','Twogainz','Vitap','Yuly','Zarock','몰렁'] },
-  { id: 'union2', name: 'Union 2', members: [] },
 ];
 
 const UNITS = ['2B','A2','Ada Wong','Ade','Ade: Agent Bunny','Admi','Alice','Alice: Wonderland Bunny','Anchor','Anchor: Innocent Maid','Anis','S. Anis','Anis: Star','Anne: Miracle Fairy','Arcana','Arcana: Fortune Mate','Aria','Asuka Shikinami Langley','Asuka Shikinami Langley: Wille','Avistar','Bay','Bay (Treasure)','Belorta','Biscuit','Blanc','Bready','Brid','Brid: Silent Track','Centi','Centi (Treasure)','Chime','Chisato Nishikigi','Cinderella','Claire Redfield','Clay','Cocoa','Crow','Crown','Crust','D','D: Killer Wife','Delta','Delta: Ninja Thief','Diesel','Diesel (Treasure)','Diesel: Winter Sweets','Dolla','Dorothy','Dorothy: Serendipity','Drake','Drake (Treasure)','E.H.','Ein','Elegg','Elegg: Boom and Shock','Emilia','Emma','Emma: Tactical Upgrade','Epinel','Ether','Eunhwa','Eunhwa: Tactical Upgrade','Eve','Exia','Exia (Treasure)','Flora','Folkwang','Frima','Frima (Treasure)','Grave','Guillotine','Guillotine: Winter Slayer','Guilty','Harran','Helm','Helm (Treasure)','Helm: Aquamarine','Himeno','Isabel','Jackal','Jill Valentine','Julia','Julia (Treasure)','K','Kilo','Kurumi','Label','Laplace','Laplace (Treasure)','Leona','Liberalio','Lily','Liter','Little Mermaid (Siren)','Ludmilla','Ludmilla: Winter Owner','Maiden','Maiden: Ice Rose','Makima','Mana','Marciana','Mari Makinami Illustrious','Mary','Mary: Bay Goddess','Mast','Mast: Romantic Maid','Maxwell','Mica','Mica: Snow Buddy','Mihara','Mihara: Bonding Chain','Milk','Milk (Treasure)','Milk: Blooming Bunny','Mint','Miranda','Miranda (Treasure)','Misato Katsuragi','Modernia','Moran','Moran (Treasure)','Mori','N102','Naga','Nayuta','Neon','Neon: Blue Ocean','Neon: Vision Eye','Nero','Neve','Nihilister','Noah','Noir','Noise','Novel','Pascal','Pepper','Phantom','Poli','Poli (Treasure)','Power','Privaty','Privaty (Treasure)','Privaty: Unkind Maid','Product 08','Product 12','Product 23','Quency','Quency: Escape Queen','Quiry','RH','Ram','Rapi','Rapi: Red Hood','Rapunzel','Rapunzel: Pure Grace','Raven','Red Hood','Rei','Rei Ayanami','Rei Ayanami (Tentative Name)','Rem','Rosanna','Rosanna: Chic Ocean','Rouge','Rumani','Rupee','Rupee: Winter Shopper','SBS','SW','Sakura','Sakura: Bloom in Summer','Scarlet','Scarlet: Black Shadow','Signal','Snow Crane','Snow White','Snow White: Heavy Arms','Soda','Soline','Soline: Frost Ticket','Sugar','Tia','Tove','Tove (Treasure)','Velvet','Vesti','Viper','Viper (Treasure)','Zwei','Zwei (Treasure)'];
@@ -32,7 +31,7 @@ const exportCSV = (allData,bossNames,members,syncLevels,unionName) => {
   a.download=`${unionName}_raid_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 };
 
-const C = { bg:'#0f1117',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8eaf0',mut:'#6b7280',grn:'#4ade80',gld:'#fbbf24',red:'#f87171',dang:'#7f1d1d',succ:'#14532d' };
+const C = { bg:'#050507',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8eaf0',mut:'#6b7280',grn:'#4ade80',gld:'#fbbf24',red:'#f87171',dang:'#7f1d1d',succ:'#14532d' };
 const f = { fontFamily:'Helvetica, Arial, sans-serif' };
 const pill = (bg,color) => ({ fontSize:10,padding:'2px 7px',background:bg,border:`1px solid ${C.bdr}`,borderRadius:999,color,whiteSpace:'nowrap' });
 
@@ -338,7 +337,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
   const addRun=()=>{const d=JSON.parse(JSON.stringify(data));d.runs[boss].push(emptyRun());onSave(d);};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'1 1 400px',maxWidth:680,overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
@@ -574,6 +573,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
         <div style={{padding:'0 1rem 0.75rem',display:'flex',gap:8,flexWrap:'wrap'}}>
           {!editBN&&<button style={smBtn} onClick={()=>{setDraftBN([...bossNames]);setEditBN(true);}}>✏ Edit boss names</button>}
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
+         
         </div>
 
         {editBN&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
