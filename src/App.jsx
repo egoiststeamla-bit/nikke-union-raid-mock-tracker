@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-const DEFAULT_MEMBERS = ['Ada','Adema','Anda','Cray','Creature','Dragg','Egoist','Elija','John','Jose','Kenty','Klein','Kuhaku','Mailibub','Malice50','Metamor','Mikohara','Nasury','Niotrink','No','Presens','Pyra','Ranzuken','Reign','Shareph','Surdax','Thearic','Twogainz','Vitap','Yuly','Zarock','몰렁'];
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
 const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
+
+// Default unions — admin can add/remove/rename these
+const DEFAULT_UNIONS = [
+  { id: 'union1', name: 'Union 1', members: ['Ada','Adema','Anda','Cray','Creature','Dragg','Egoist','Elija','John','Jose','Kenty','Klein','Kuhaku','Mailibub','Malice50','Metamor','Mikohara','Nasury','Niotrink','No','Presens','Pyra','Ranzuken','Reign','Shareph','Surdax','Thearic','Twogainz','Vitap','Yuly','Zarock','몰렁'] },
+];
+
 const UNITS = ['2B','A2','Ada Wong','Ade','Ade: Agent Bunny','Admi','Alice','Alice: Wonderland Bunny','Anchor','Anchor: Innocent Maid','Anis','S. Anis','Anis: Star','Anne: Miracle Fairy','Arcana','Arcana: Fortune Mate','Aria','Asuka Shikinami Langley','Asuka Shikinami Langley: Wille','Avistar','Bay','Bay (Treasure)','Belorta','Biscuit','Blanc','Bready','Brid','Brid: Silent Track','Centi','Centi (Treasure)','Chime','Chisato Nishikigi','Cinderella','Claire Redfield','Clay','Cocoa','Crow','Crown','Crust','D','D: Killer Wife','Delta','Delta: Ninja Thief','Diesel','Diesel (Treasure)','Diesel: Winter Sweets','Dolla','Dorothy','Dorothy: Serendipity','Drake','Drake (Treasure)','E.H.','Ein','Elegg','Elegg: Boom and Shock','Emilia','Emma','Emma: Tactical Upgrade','Epinel','Ether','Eunhwa','Eunhwa: Tactical Upgrade','Eve','Exia','Exia (Treasure)','Flora','Folkwang','Frima','Frima (Treasure)','Grave','Guillotine','Guillotine: Winter Slayer','Guilty','Harran','Helm','Helm (Treasure)','Helm: Aquamarine','Himeno','Isabel','Jackal','Jill Valentine','Julia','Julia (Treasure)','K','Kilo','Kurumi','Label','Laplace','Laplace (Treasure)','Leona','Liberalio','Lily','Liter','Little Mermaid (Siren)','Ludmilla','Ludmilla: Winter Owner','Maiden','Maiden: Ice Rose','Makima','Mana','Marciana','Mari Makinami Illustrious','Mary','Mary: Bay Goddess','Mast','Mast: Romantic Maid','Maxwell','Mica','Mica: Snow Buddy','Mihara','Mihara: Bonding Chain','Milk','Milk (Treasure)','Milk: Blooming Bunny','Mint','Miranda','Miranda (Treasure)','Misato Katsuragi','Modernia','Moran','Moran (Treasure)','Mori','N102','Naga','Nayuta','Neon','Neon: Blue Ocean','Neon: Vision Eye','Nero','Neve','Nihilister','Noah','Noir','Noise','Novel','Pascal','Pepper','Phantom','Poli','Poli (Treasure)','Power','Privaty','Privaty (Treasure)','Privaty: Unkind Maid','Product 08','Product 12','Product 23','Quency','Quency: Escape Queen','Quiry','RH','Ram','Rapi','Rapi: Red Hood','Rapunzel','Rapunzel: Pure Grace','Raven','Red Hood','Rei','Rei Ayanami','Rei Ayanami (Tentative Name)','Rem','Rosanna','Rosanna: Chic Ocean','Rouge','Rumani','Rupee','Rupee: Winter Shopper','SBS','SW','Sakura','Sakura: Bloom in Summer','Scarlet','Scarlet: Black Shadow','Signal','Snow Crane','Snow White','Snow White: Heavy Arms','Soda','Soline','Soline: Frost Ticket','Sugar','Tia','Tove','Tove (Treasure)','Velvet','Vesti','Viper','Viper (Treasure)','Zwei','Zwei (Treasure)'];
 
 const emptyRun = () => ({ units: Array(UPR).fill(''), damage: '', excluded: false, isActual: false });
@@ -17,28 +22,36 @@ const totalActuals = (d) => d.runs.flat().filter(r=>r.isActual).length;
 const bossActualCount = (d,bi) => d.runs[bi].filter(r=>r.isActual).length;
 const runIsBlocked = (run,data,boss,ri) => { const s=new Set(); data.runs.forEach((br,bi)=>br.forEach((r,i)=>{if(r.isActual&&!(bi===boss&&i===ri))r.units.forEach(u=>u&&s.add(u));})); return run.units.some(u=>u&&s.has(u)); };
 const deepSet = (obj,path,val) => { const d=JSON.parse(JSON.stringify(obj)); let c=d; for(let i=0;i<path.length-1;i++) c=c[path[i]]; c[path[path.length-1]]=val; return d; };
-const exportCSV = (allData,bossNames,members,syncLevels) => { const rows=[['Member','Sync','Boss','Run#','Is Actual','Damage','Unit1','Unit2','Unit3','Unit4','Unit5']]; members.forEach(m=>{const d=allData[m]??emptyData(); d.runs.forEach((br,bi)=>br.forEach((run,ri)=>{if(!run.damage&&run.units.every(u=>!u))return; rows.push([m,syncLevels[m]||'',bossNames[bi],ri+1,run.isActual?'YES':'',run.damage||'',...run.units]);}));}); const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`union_raid_${new Date().toISOString().slice(0,10)}.csv`; a.click(); };
 
-const C = { bg:'#0f1117',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8eaf0',mut:'#6b7280',grn:'#4ade80',gld:'#fbbf24',red:'#f87171',dang:'#7f1d1d',succ:'#14532d' };
+const exportCSV = (allData,bossNames,members,syncLevels,unionName) => {
+  const rows=[['Member','Sync','Boss','Run#','Is Actual','Damage','Unit1','Unit2','Unit3','Unit4','Unit5']];
+  members.forEach(m=>{const d=allData[m]??emptyData(); d.runs.forEach((br,bi)=>br.forEach((run,ri)=>{if(!run.damage&&run.units.every(u=>!u))return; rows.push([m,syncLevels[m]||'',bossNames[bi],ri+1,run.isActual?'YES':'',run.damage||'',...run.units]);}));});
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`${unionName}_raid_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+};
+
+const C = { bg:'#050507',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8eaf0',mut:'#6b7280',grn:'#4ade80',gld:'#fbbf24',red:'#f87171',dang:'#7f1d1d',succ:'#14532d' };
 const f = { fontFamily:'Helvetica, Arial, sans-serif' };
 const pill = (bg,color) => ({ fontSize:10,padding:'2px 7px',background:bg,border:`1px solid ${C.bdr}`,borderRadius:999,color,whiteSpace:'nowrap' });
 
-const DOC_REF = () => doc(db, 'data', 'raid');
+// Each union gets its own Firestore doc: data/{unionId}
+const unionDocRef = (unionId) => doc(db, 'data', unionId);
 
-const loadFromFirebase = async () => {
+const loadUnion = async (unionId) => {
   try {
-    const snap = await getDoc(DOC_REF());
+    const snap = await getDoc(unionDocRef(unionId));
     if (!snap.exists()) return null;
     const p = snap.data();
     return {
-      bossNames: p.bossNames,
-      members: p.members,
+      bossNames: p.bossNames || [...DEFAULT_BOSS_NAMES],
+      members: p.members || [],
       syncLevels: p.syncLevels || {},
       data: Object.fromEntries(
         Object.entries(p.data || {}).map(([member, d]) => [
           member,
           {
-            doubleHit: d.doubleHit,
+            doubleHit: d.doubleHit || Array(BOSSES).fill(false),
             runs: Array.from({ length: BOSSES }, (_, bi) => {
               const bossRuns = d.runs?.[`boss_${bi}`] || {};
               return Array.from({ length: Math.max(Object.keys(bossRuns).length, UPR) }, (_, ri) =>
@@ -49,13 +62,10 @@ const loadFromFirebase = async () => {
         ])
       )
     };
-  } catch (e) {
-    console.error('Firestore load failed:', e);
-    return null;
-  }
+  } catch (e) { console.error('Load failed:', e); return null; }
 };
 
-const saveToFirebase = async (payload) => {
+const saveUnion = async (unionId, payload) => {
   try {
     const cleaned = {
       bossNames: payload.bossNames,
@@ -76,42 +86,80 @@ const saveToFirebase = async (payload) => {
         ])
       )
     };
-    await setDoc(DOC_REF(), cleaned);
-  } catch (e) {
-    console.error('Firestore save failed:', e);
-  }
+    await setDoc(unionDocRef(unionId), cleaned);
+  } catch (e) { console.error('Save failed:', e); }
+};
+
+// Union list stored in a separate doc
+const UNIONS_REF = () => doc(db, 'config', 'unions');
+const loadUnions = async () => {
+  try {
+    const snap = await getDoc(UNIONS_REF());
+    return snap.exists() ? snap.data().list : [...DEFAULT_UNIONS];
+  } catch (_) { return [...DEFAULT_UNIONS]; }
+};
+const saveUnions = async (list) => {
+  try { await setDoc(UNIONS_REF(), { list }); } catch (_) {}
 };
 
 export default function App() {
-  const [view,setView]           = useState('login');
-  const [member,setMember]       = useState(null);
-  const [allData,setAll]         = useState({});
-  const [bossNames,setBN]        = useState([...DEFAULT_BOSS_NAMES]);
-  const [members,setMembers]     = useState([...DEFAULT_MEMBERS]);
+  const [view,setView]             = useState('home');
+  const [unions,setUnions]         = useState([]);
+  const [activeUnion,setActiveUnion] = useState(null); // { id, name, members }
+  const [member,setMember]         = useState(null);
+  const [allData,setAll]           = useState({});
+  const [bossNames,setBN]          = useState([...DEFAULT_BOSS_NAMES]);
+  const [members,setMembers]       = useState([]);
   const [syncLevels,setSyncLevels] = useState({});
-  const [loading,setLoading]     = useState(true);
-  const [saving,setSaving]       = useState(false);
+  const [loading,setLoading]       = useState(true);
+  const [saving,setSaving]         = useState(false);
 
+  // Load union list on startup
   useEffect(()=>{
     (async()=>{
-      const p = await loadFromFirebase();
-      if(p){
-        setAll(p.data||{});
-        setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]);
-        setMembers(p.members||[...DEFAULT_MEMBERS]);
-        setSyncLevels(p.syncLevels||{});
-      }
+      const list = await loadUnions();
+      setUnions(list);
       setLoading(false);
     })();
   },[]);
 
-  const persist = (data,bn,mems,syncs) => saveToFirebase({data,bossNames:bn,members:mems,syncLevels:syncs});
+  // Load union data when activeUnion changes
+  useEffect(()=>{
+    if(!activeUnion) return;
+    (async()=>{
+      setLoading(true);
+      const p = await loadUnion(activeUnion.id);
+      if(p){
+        setAll(p.data||{});
+        setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]);
+        setMembers(p.members||activeUnion.members||[]);
+        setSyncLevels(p.syncLevels||{});
+      } else {
+        // First time — initialise from union definition
+        setAll({});
+        setBN([...DEFAULT_BOSS_NAMES]);
+        setMembers(activeUnion.members||[]);
+        setSyncLevels({});
+      }
+      setLoading(false);
+    })();
+  },[activeUnion]);
+
+  const persist = (data,bn,mems,syncs) => saveUnion(activeUnion.id,{data,bossNames:bn,members:mems,syncLevels:syncs});
   const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
   const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
+
+  const handleUnionSelect = (union) => { setActiveUnion(union); setView('login'); };
+  const handleMemberSelect = (name) => {
+    setMember(name);
+    setView(syncLevels[name] ? 'member' : 'sync');
+  };
+  const handleBack = () => { setView('login'); setMember(null); };
+  const handleBackToHome = () => { setView('home'); setActiveUnion(null); setMember(null); };
 
   if(loading) return (
     <div style={{height:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:C.bg,...f}}>
@@ -121,30 +169,122 @@ export default function App() {
     </div>
   );
 
-  // After selecting name: if sync already set, go straight to member view; otherwise show sync prompt
-  const handleMemberSelect = (name) => {
-    setMember(name);
-    if(syncLevels[name]) {
-      setView('member');
-    } else {
-      setView('sync');
-    }
-  };
-
-  if(view==='login')  return <LoginView members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')}/>;
+  if(view==='home')   return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')}/>;
+  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')}/>;
+  if(view==='login')  return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome}/>;
   if(view==='sync')   return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }}/>;
-  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels)} getData={getData} onSaveSyncLevel={saveSync}/>;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={()=>setView('login')}/>;
+  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync}/>;
+  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack}/>;
 }
 
-function LoginView({members,onMember,onAdmin}) {
+// ── Home: pick your union ─────────────────────────────────────────────────────
+function HomeView({unions,onSelectUnion,onAdmin}) {
+  return (
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:440,overflow:'hidden'}}>
+        <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
+          <div style={{fontSize:40,marginBottom:8}}>⚔</div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Union Raid</h1>
+          <p style={{fontSize:13,color:C.mut,margin:'4px 0 0'}}>Mock Run Tracker</p>
+        </div>
+        <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:10}}>
+          <label style={{fontSize:11,color:C.mut,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Select your union</label>
+          {unions.map(u=>(
+            <button key={u.id} onClick={()=>onSelectUnion(u)}
+              style={{width:'100%',padding:'12px 16px',fontSize:14,fontWeight:600,background:C.surf2,color:C.txt,border:`1px solid ${C.bdr}`,borderRadius:10,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span>{u.name}</span>
+              <span style={{fontSize:12,color:C.mut}}>{u.members.length} members →</span>
+            </button>
+          ))}
+          <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer',marginTop:4}} onClick={onAdmin}>
+            ⚙ Super Admin
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+// ── Super Admin: manage unions ────────────────────────────────────────────────
+function SuperAdminView({unions,onSave,onBack}) {
+  const [unlocked,setUnlocked]=useState(false);
+  const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
+  const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
+
+  const addUnion = () => {
+    const id = `union${Date.now()}`;
+    setDraft([...draft,{id,name:`Union ${draft.length+1}`,members:[]}]);
+  };
+  const removeUnion = (id) => setDraft(draft.filter(u=>u.id!==id));
+  const updateName = (id,name) => setDraft(draft.map(u=>u.id===id?{...u,name}:u));
+  const updateMembers = (id,text) => setDraft(draft.map(u=>u.id===id?{...u,members:text.split('\n').map(s=>s.trim()).filter(Boolean)}:u));
+
+  if(!unlocked) return (
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
+        <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
+          <div style={{fontSize:40,marginBottom:8}}>⚙</div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Super Admin</h1>
+          <p style={{fontSize:13,color:C.mut,margin:'4px 0 0'}}>Manage unions</p>
+        </div>
+        <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
+          <input type='password' placeholder='password' value={pw}
+            style={{width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${pwErr?C.red:C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'}}
+            onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==='Enter'&&(pw===ADMIN_PW?setUnlocked(true):setPwErr(true))}/>
+          {pwErr&&<p style={{color:C.red,fontSize:12,margin:'-8px 0 0'}}>Wrong password</p>}
+          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer'}} onClick={()=>pw===ADMIN_PW?setUnlocked(true):setPwErr(true)}>Unlock</button>
+          <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={onBack}>← back</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:700,alignSelf:'flex-start',overflow:'hidden'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'1.25rem 1rem',borderBottom:`1px solid ${C.bdr}`}}>
+          <div>
+            <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
+            <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Manage Unions</h2>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.grn,border:`1px solid ${C.grn}`,borderRadius:6,cursor:'pointer'}} onClick={addUnion}>+ Add Union</button>
+            <button style={{padding:'6px 14px',fontSize:12,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:6,cursor:'pointer'}} onClick={()=>onSave(draft)}>Save All</button>
+          </div>
+        </div>
+        <div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:16}}>
+          {draft.map(u=>(
+            <div key={u.id} style={{background:C.surf2,border:`1px solid ${C.bdr}`,borderRadius:10,padding:'1rem',display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <input value={u.name} onChange={e=>updateName(u.id,e.target.value)}
+                  style={{flex:1,padding:'7px 10px',fontSize:14,fontWeight:600,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt}}/>
+                <button style={{padding:'6px 12px',fontSize:11,background:'transparent',color:C.red,border:`1px solid ${C.red}`,borderRadius:6,cursor:'pointer'}} onClick={()=>removeUnion(u.id)}>Remove</button>
+              </div>
+              <div>
+                <label style={{fontSize:11,color:C.mut,display:'block',marginBottom:4}}>MEMBERS (one per line)</label>
+                <textarea rows={6} value={u.members.join('\n')} onChange={e=>updateMembers(u.id,e.target.value)}
+                  style={{width:'100%',padding:'8px 10px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt,resize:'vertical',fontFamily:'Helvetica,Arial,sans-serif',boxSizing:'border-box'}}/>
+                <span style={{fontSize:11,color:C.mut}}>{u.members.length} members</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+// ── Login: pick member within a union ────────────────────────────────────────
+function LoginView({unionName,members,onMember,onAdmin,onBack}) {
   const [sel,setSel]=useState('');
   return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
-          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Union Raid</h1>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{unionName}</h1>
           <p style={{fontSize:13,color:C.mut,margin:'4px 0 0'}}>Mock Run Tracker</p>
         </div>
         <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
@@ -155,6 +295,7 @@ function LoginView({members,onMember,onAdmin}) {
           </select>
           <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer',opacity:sel?1:0.4}} disabled={!sel} onClick={()=>onMember(sel)}>Enter my runs →</button>
           <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={onAdmin}>Admin view</button>
+          <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:'none',cursor:'pointer'}} onClick={onBack}>← back to unions</button>
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -196,20 +337,20 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
   const addRun=()=>{const d=JSON.parse(JSON.stringify(data));d.runs[boss].push(emptyRun());onSave(d);};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'1 1 400px',maxWidth:680,overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
             <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
-            <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+           <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
               <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
               <span style={{fontSize:11,color:C.mut,padding:'2px 8px',background:C.surf2,borderRadius:999}}>{saving?'saving…':'saved ✓'}</span>
               {onSyncEdit&&<>
                 <span style={{fontSize:11,color:C.mut}}>Sync:</span>
-                  <input type='number' value={syncVal} placeholder='—'
-                    style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
-                    onChange={e=>setSyncVal(e.target.value)}
-                    onBlur={()=>onSyncEdit&&syncVal!==syncLevels[name]&&onSyncEdit(name,syncVal)}/>
+                <input type='number' value={syncVal} placeholder='—'
+                  style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
+                  onChange={e=>setSyncVal(e.target.value)}
+                  onBlur={()=>syncVal!==syncLevels[name]&&onSyncEdit(name,syncVal)}/>
               </>}
             </div>
           </div>
@@ -357,7 +498,7 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   </>;
 }
 
-function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel}) {
+function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
@@ -372,7 +513,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>🛡</div>
-          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin</h1>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin — {unionName}</h1>
           <p style={{fontSize:13,color:C.mut,margin:'4px 0 0'}}>Password required</p>
         </div>
         <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
@@ -410,7 +551,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
             <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
-            <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin View</h2>
+            <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin — {unionName}</h2>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <button style={smBtn} onClick={onExport}>⬇ Export CSV</button>
@@ -421,7 +562,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         {confirmWipe&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
           <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:12,padding:'1.5rem',maxWidth:380,width:'90%'}}>
             <h3 style={{margin:'0 0 8px',color:C.txt}}>Start new Union Raid?</h3>
-            <p style={{fontSize:13,color:C.mut,margin:'0 0 16px'}}>Exports current data then wipes all run inputs. Boss names, member list and sync levels are kept.</p>
+            <p style={{fontSize:13,color:C.mut,margin:'0 0 16px'}}>Exports current data then wipes all run inputs and sync levels for {unionName}. Boss names and member list are kept.</p>
             <div style={{display:'flex',gap:8}}>
               <button style={{flex:1,padding:11,fontSize:13,fontWeight:600,background:C.red,color:'#fff',border:'none',borderRadius:8,cursor:'pointer'}} onClick={()=>{onExport();onWipe();setConfirmWipe(false);}}>Export &amp; Wipe</button>
               <button style={{flex:1,padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={()=>setConfirmWipe(false)}>Cancel</button>
@@ -432,6 +573,7 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         <div style={{padding:'0 1rem 0.75rem',display:'flex',gap:8,flexWrap:'wrap'}}>
           {!editBN&&<button style={smBtn} onClick={()=>{setDraftBN([...bossNames]);setEditBN(true);}}>✏ Edit boss names</button>}
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
+         
         </div>
 
         {editBN&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
@@ -483,8 +625,8 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
         <div style={{overflowX:'auto',padding:'0 1rem 1.5rem'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
             <thead>
-              <tr>{['Member','Sync','Best Mock','Run 1','Run 2','Run 3','Run 4','Run 5', rows.some(r=>r.bRuns.length>5)?'+more':'', 'Actuals',''].map((h,i)=>(
-                <th key={i} style={{padding:'6px',textAlign:i<1?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap',minWidth:i>3&&i<(rows[0]?.bRuns||[]).length+4?90:undefined}}>{h}</th>
+              <tr>{['Member','Sync','Best Mock','Run 1','Run 2','Run 3','Run 4','Run 5',rows.some(r=>r.bRuns.length>5)?'+more':'','Actuals',''].map((h,i)=>(
+                <th key={i} style={{padding:'6px',textAlign:i<1?'left':'center',fontSize:10,fontWeight:700,color:C.mut,background:C.surf2,borderBottom:`1px solid ${C.bdr}`,textTransform:'uppercase',letterSpacing:0.5,whiteSpace:'nowrap'}}>{h}</th>
               ))}</tr>
             </thead>
             <tbody>
@@ -511,19 +653,18 @@ function AdminView({allData,bossNames,members,syncLevels,onBack,onOverride,onSav
                     </td>;
                   })}
                   {bRuns.length>5
-                    ? <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,fontSize:11,textAlign:'center',minWidth:90,cursor:'pointer',color:C.mut}} onClick={()=>setExpandRun(expandRun===`${m}-more`?null:`${m}-more`)}>
-                        <span>{expandRun===`${m}-more`?'▲':(`+${bRuns.length-5} more`)}</span>
-                        {expandRun===`${m}-more`&&<div style={{marginTop:4,display:'flex',flexDirection:'column',gap:3}}>
-                          {bRuns.slice(5).map((run,ri)=>{
-                            const locked=run.units.some(u=>u&&gu.has(u)&&!bu.has(u));
-                            return <div key={ri} style={{fontSize:10,color:run.isActual?C.gld:run.excluded||locked?C.mut:C.txt,textDecoration:run.excluded||locked?'line-through':'none'}}>
-                              R{ri+6}: {run.damage?fmt(run.damage):'—'}
-                              {run.isActual&&' ✓'}
-                            </div>;
-                          })}
-                        </div>}
-                      </td>
-                    : <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`}}/>
+                    ?<td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,fontSize:11,textAlign:'center',minWidth:90,cursor:'pointer',color:C.mut}} onClick={()=>setExpandRun(expandRun===`${m}-more`?null:`${m}-more`)}>
+                      <span>{expandRun===`${m}-more`?'▲':`+${bRuns.length-5} more`}</span>
+                      {expandRun===`${m}-more`&&<div style={{marginTop:4,display:'flex',flexDirection:'column',gap:3}}>
+                        {bRuns.slice(5).map((run,ri)=>{
+                          const locked=run.units.some(u=>u&&gu.has(u)&&!bu.has(u));
+                          return <div key={ri} style={{fontSize:10,color:run.isActual?C.gld:run.excluded||locked?C.mut:C.txt,textDecoration:run.excluded||locked?'line-through':'none'}}>
+                            R{ri+6}: {run.damage?fmt(run.damage):'—'}{run.isActual&&' ✓'}
+                          </div>;
+                        })}
+                      </div>}
+                    </td>
+                    :<td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`}}/>
                   }
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>
                     <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999,color:'#fff',background:tot>=MAX_ACTUAL?C.dang:C.surf2}}>{tot}/{MAX_ACTUAL}</span>
