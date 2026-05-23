@@ -204,11 +204,13 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
             <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
               <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
               <span style={{fontSize:11,color:C.mut,padding:'2px 8px',background:C.surf2,borderRadius:999}}>{saving?'saving…':'saved ✓'}</span>
-              <span style={{fontSize:11,color:C.mut}}>Sync:</span>
-              <input type='number' value={syncVal} placeholder='—'
-                style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
-                onChange={e=>setSyncVal(e.target.value)}
-                onBlur={()=>onSyncEdit&&syncVal!==syncLevels[name]&&onSyncEdit(name,syncVal)}/>
+              {onSyncEdit&&<>
+                <span style={{fontSize:11,color:C.mut}}>Sync:</span>
+                  <input type='number' value={syncVal} placeholder='—'
+                    style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
+                    onChange={e=>setSyncVal(e.target.value)}
+                    onBlur={()=>onSyncEdit&&syncVal!==syncLevels[name]&&onSyncEdit(name,syncVal)}/>
+              </>}
             </div>
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
