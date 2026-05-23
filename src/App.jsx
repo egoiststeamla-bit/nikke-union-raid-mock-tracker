@@ -187,6 +187,7 @@ function SyncView({name,onConfirm}) {
 
 function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack}) {
   const [boss,setBoss]=useState(0);
+  const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
   const gu=allActualUnits(data),tot=totalActuals(data),dh=data.doubleHit[boss];
   const bAct=bossActualCount(data,boss),maxB=dh?2:1;
@@ -204,9 +205,10 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
               <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
               <span style={{fontSize:11,color:C.mut,padding:'2px 8px',background:C.surf2,borderRadius:999}}>{saving?'saving…':'saved ✓'}</span>
               <span style={{fontSize:11,color:C.mut}}>Sync:</span>
-              <input type='number' value={syncLevels[name]||''} placeholder='—'
+              <input type='number' value={syncVal} placeholder='—'
                 style={{width:60,padding:'3px 6px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf2,color:C.txt,textAlign:'center'}}
-                onChange={e=>onSyncEdit&&onSyncEdit(name,e.target.value)}/>
+                onChange={e=>setSyncVal(e.target.value)}
+                onBlur={()=>onSyncEdit&&syncVal!==syncLevels[name]&&onSyncEdit(name,syncVal)}/>
             </div>
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
