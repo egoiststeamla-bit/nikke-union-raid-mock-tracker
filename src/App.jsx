@@ -175,18 +175,18 @@ export default function App() {
     </div>
   );
 
-  if(view==='home')   return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')}/>;
+  if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={bgImage}/>;
   if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')}/>;
-  if(view==='login')  return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome}/>;
-  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}}/>;
+  if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome}/>;
+  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={bgImage}/>;
   if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={bgImage}/>;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack}/>;
+  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack} bgImage={bgImage}/>;
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
-function HomeView({unions,onSelectUnion,onAdmin}) {
+function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:440,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
@@ -309,10 +309,10 @@ function LoginView({unionName,members,onMember,onAdmin,onBack}) {
   );
 }
 
-function SyncView({name,onConfirm,onBack}) {
+function SyncView({name,onConfirm,onBack,bgImage}) {
   const [val,setVal]=useState('');
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <h2 style={{fontSize:18,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
@@ -335,7 +335,7 @@ function SyncView({name,onConfirm,onBack}) {
   );
 }
 
-function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit}) {
+function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit,bgImage}) {
   const [boss,setBoss]=useState(0);
   const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
@@ -346,7 +346,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
   const addRun=()=>{const d=JSON.parse(JSON.stringify(data));d.runs[boss].push(emptyRun());onSave(d);};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'1 1 400px',maxWidth:680,overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
@@ -556,7 +556,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const inp={width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage})`:'none',backgroundSize:'cover',backgroundPosition:'center',backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:1000,alignSelf:'flex-start',overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
