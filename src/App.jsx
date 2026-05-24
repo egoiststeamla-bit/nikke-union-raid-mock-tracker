@@ -47,6 +47,7 @@ const loadUnion = async (unionId) => {
       bossNames: p.bossNames || [...DEFAULT_BOSS_NAMES],
       members: p.members || [],
       syncLevels: p.syncLevels || {},
+      bgImage: p.bgImage || '',
       data: Object.fromEntries(
         Object.entries(p.data || {}).map(([member, d]) => [
           member,
@@ -71,6 +72,7 @@ const saveUnion = async (unionId, payload) => {
       bossNames: payload.bossNames,
       members: payload.members,
       syncLevels: payload.syncLevels || {},
+      bgImage: payload.bgImage || '',
       data: Object.fromEntries(
         Object.entries(payload.data).map(([member, d]) => [
           member,
@@ -113,6 +115,7 @@ export default function App() {
   const [syncLevels,setSyncLevels] = useState({});
   const [loading,setLoading]       = useState(true);
   const [saving,setSaving]         = useState(false);
+  const [bgImage,setBgImage]       = useState('');
 
   // Load union list on startup
   useEffect(()=>{
@@ -134,12 +137,14 @@ export default function App() {
         setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]);
         setMembers(p.members||activeUnion.members||[]);
         setSyncLevels(p.syncLevels||{});
+        setBgImage(p.bgImage||'');
       } else {
         // First time — initialise from union definition
         setAll({});
         setBN([...DEFAULT_BOSS_NAMES]);
         setMembers(activeUnion.members||[]);
         setSyncLevels({});
+        setBgImage('');
       }
       setLoading(false);
     })();
@@ -150,6 +155,7 @@ export default function App() {
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
   const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
+  const saveBG = async(url) => { setBgImage(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage:url}); };
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
@@ -172,9 +178,8 @@ export default function App() {
   if(view==='home')   return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')}/>;
   if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')}/>;
   if(view==='login')  return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome}/>;
-  if(view==='sync')   return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }}/>;
-  if(view==='admin')  return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync}/>;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack}/>;
+  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}}/>;
+  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={bgImage}/>;
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
@@ -303,7 +308,7 @@ function LoginView({unionName,members,onMember,onAdmin,onBack}) {
   );
 }
 
-function SyncView({name,onConfirm}) {
+function SyncView({name,onConfirm,onBack}) {
   const [val,setVal]=useState('');
   return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -317,6 +322,9 @@ function SyncView({name,onConfirm}) {
           <input type='number' placeholder='e.g. 160' value={val} onChange={e=>setVal(e.target.value)}
             onKeyDown={e=>e.key==='Enter'&&val&&onConfirm(val)}
             style={{width:'100%',padding:'10px 12px',fontSize:20,border:`1px solid ${C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box',textAlign:'center'}}/>
+          <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:'none',cursor:'pointer'}} onClick={onBack}>
+            ← Return
+          </button>
           <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer',opacity:val?1:0.4}} disabled={!val} onClick={()=>onConfirm(val)}>
             Continue →
           </button>
@@ -498,7 +506,7 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   </>;
 }
 
-function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel}) {
+function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel,onSaveBG,bgImage}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
@@ -507,6 +515,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const [editBN,setEditBN]=useState(false),[draftBN,setDraftBN]=useState([...bossNames]);
   const [editMems,setEditMems]=useState(false),[draftMems,setDraftMems]=useState(members.join('\n'));
   const [expandRun,setExpandRun]=useState(null),[confirmWipe,setConfirmWipe]=useState(false);
+  const [editBG,setEditBG]=useState(false),[draftBG,setDraftBG]=useState(bgImage||'');
 
   if(!unlocked) return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -546,7 +555,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const inp={width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage})`:'none',backgroundSize:'cover',backgroundPosition:'center',backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:1000,alignSelf:'flex-start',overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
@@ -573,6 +582,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
         <div style={{padding:'0 1rem 0.75rem',display:'flex',gap:8,flexWrap:'wrap'}}>
           {!editBN&&<button style={smBtn} onClick={()=>{setDraftBN([...bossNames]);setEditBN(true);}}>✏ Edit boss names</button>}
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
+          {!editBG&&<button style={smBtn} onClick={()=>{setDraftBG(bgImage||'');setEditBG(true);}}>🖼 Background</button>}
          
         </div>
 
@@ -592,6 +602,16 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           <div style={{display:'flex',gap:8}}>
             <button style={{...smBtn,color:C.txt}} onClick={()=>{onSaveMembers(draftMems.split('\n').map(s=>s.trim()).filter(Boolean));setEditMems(false);}}>Save members</button>
             <button style={smBtn} onClick={()=>setEditMems(false)}>Cancel</button>
+          </div>
+        </div>}
+
+        {editBG&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
+          <p style={{fontSize:12,color:C.mut,margin:0}}>Paste image URL:</p>
+          <input value={draftBG} placeholder='https://...' style={{...inp,fontSize:12,padding:'6px 10px'}} onChange={e=>setDraftBG(e.target.value)}/>
+          <div style={{display:'flex',gap:8}}>
+            <button style={{...smBtn,color:C.txt}} onClick={()=>{onSaveBG(draftBG);setEditBG(false);}}>Apply</button>
+            <button style={{...smBtn,color:C.red}} onClick={()=>{onSaveBG('');setDraftBG('');setEditBG(false);}}>Remove</button>
+            <button style={smBtn} onClick={()=>setEditBG(false)}>Cancel</button>
           </div>
         </div>}
 
