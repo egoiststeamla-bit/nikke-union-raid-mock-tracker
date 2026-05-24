@@ -104,6 +104,17 @@ const saveUnions = async (list) => {
   try { await setDoc(UNIONS_REF(), { list }); } catch (_) {}
 };
 
+const GLOBALS_REF = () => doc(db, 'config', 'globals');
+const loadGlobals = async () => {
+  try {
+    const snap = await getDoc(GLOBALS_REF());
+    return snap.exists() ? snap.data() : {};
+  } catch(_) { return {}; }
+};
+const saveGlobals = async (data) => {
+  try { await setDoc(GLOBALS_REF(), data); } catch(_) {}
+};
+
 export default function App() {
   const [view,setView]             = useState('home');
   const [unions,setUnions]         = useState([]);
@@ -116,12 +127,16 @@ export default function App() {
   const [loading,setLoading]       = useState(true);
   const [saving,setSaving]         = useState(false);
   const [bgImage,setBgImage]       = useState('');
-
+  const [globalBG,setGlobalBG] = useState('');
+  const saveGlobalBG = async(url) => { setGlobalBG(url); await saveGlobals({bgImage:url}); };
+  
   // Load union list on startup
   useEffect(()=>{
     (async()=>{
       const list = await loadUnions();
       setUnions(list);
+      const globals = await loadGlobals();
+      setGlobalBG(globals.bgImage||'');
       setLoading(false);
     })();
   },[]);
@@ -175,12 +190,13 @@ export default function App() {
     </div>
   );
 
-  if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={bgImage}/>;
-  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')}/>;
-  if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome}/>;
-  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={bgImage}/>;
-  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={bgImage}/>;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack} bgImage={bgImage}/>;
+  if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={globalBG}/>;
+  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG}/>;
+  const unionBG = bgImage || globalBG;
+  if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome} bgImage={unionBG}/>;
+  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={unionBG}/>;
+  if(view==='admin') return <AdminView ... onSaveBG={saveBG} bgImage={unionBG}/>;
+  return <MemberView ... bgImage={unionBG}/>;
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
@@ -213,10 +229,11 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
 }
 
 // ── Super Admin: manage unions ────────────────────────────────────────────────
-function SuperAdminView({unions,onSave,onBack}) {
+function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
+  const [editGlobalBG,setEditGlobalBG]=useState(false),[draftGlobalBG,setDraftGlobalBG]=useState(bgImage||'');
 
   const addUnion = () => {
     const id = `union${Date.now()}`;
@@ -227,7 +244,7 @@ function SuperAdminView({unions,onSave,onBack}) {
   const updateMembers = (id,text) => setDraft(draft.map(u=>u.id===id?{...u,members:text.split('\n').map(s=>s.trim()).filter(Boolean)}:u));
 
   if(!unlocked) return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚙</div>
@@ -257,8 +274,18 @@ function SuperAdminView({unions,onSave,onBack}) {
           <div style={{display:'flex',gap:8}}>
             <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.grn,border:`1px solid ${C.grn}`,borderRadius:6,cursor:'pointer'}} onClick={addUnion}>+ Add Union</button>
             <button style={{padding:'6px 14px',fontSize:12,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:6,cursor:'pointer'}} onClick={()=>onSave(draft)}>Save All</button>
+            <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{setDraftGlobalBG(bgImage||'');setEditGlobalBG(true);}}>🖼 Global BG</button>
           </div>
         </div>
+        {editGlobalBG&&<div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:8,borderBottom:`1px solid ${C.bdr}`}}>
+          <p style={{fontSize:12,color:C.mut,margin:0}}>Global background URL (applies to all pages by default):</p>
+          <input value={draftGlobalBG} placeholder='https://...' style={{width:'100%',padding:'8px 10px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt,boxSizing:'border-box'}} onChange={e=>setDraftGlobalBG(e.target.value)}/>
+          <div style={{display:'flex',gap:8}}>
+            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.txt,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG(draftGlobalBG);setEditGlobalBG(false);}}>Apply</button>
+            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.red,border:`1px solid ${C.red}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG('');setDraftGlobalBG('');setEditGlobalBG(false);}}>Remove</button>
+            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>setEditGlobalBG(false)}>Cancel</button>
+          </div>
+        </div>}
         <div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:16}}>
           {draft.map(u=>(
             <div key={u.id} style={{background:C.surf2,border:`1px solid ${C.bdr}`,borderRadius:10,padding:'1rem',display:'flex',flexDirection:'column',gap:10}}>
@@ -283,10 +310,10 @@ function SuperAdminView({unions,onSave,onBack}) {
 }
 
 // ── Login: pick member within a union ────────────────────────────────────────
-function LoginView({unionName,members,onMember,onAdmin,onBack}) {
+function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage}) {
   const [sel,setSel]=useState('');
   return (
-    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
