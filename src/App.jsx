@@ -3,7 +3,8 @@ import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
-const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
+//const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
+const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3;
 
 // Default unions — admin can add/remove/rename these
 const DEFAULT_UNIONS = [
@@ -35,6 +36,11 @@ const C = { bg:'#050507',surf:'#16181f',surf2:'#1e2130',bdr:'#2a2d3e',txt:'#e8ea
 const f = { fontFamily:'Helvetica, Arial, sans-serif' };
 const pill = (bg,color) => ({ fontSize:10,padding:'2px 7px',background:bg,border:`1px solid ${C.bdr}`,borderRadius:999,color,whiteSpace:'nowrap' });
 
+const hashPassword = async (pw) => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+};
+
 // Each union gets its own Firestore doc: data/{unionId}
 const unionDocRef = (unionId) => doc(db, 'data', unionId);
 
@@ -48,6 +54,7 @@ const loadUnion = async (unionId) => {
       members: p.members || [],
       syncLevels: p.syncLevels || {},
       bgImage: p.bgImage || '',
+      accessCode: p.accessCode || '',
       data: Object.fromEntries(
         Object.entries(p.data || {}).map(([member, d]) => [
           member,
@@ -73,6 +80,7 @@ const saveUnion = async (unionId, payload) => {
       members: payload.members,
       syncLevels: payload.syncLevels || {},
       bgImage: payload.bgImage || '',
+      accessCode: payload.accessCode || '',
       data: Object.fromEntries(
         Object.entries(payload.data).map(([member, d]) => [
           member,
@@ -115,6 +123,14 @@ const saveGlobals = async (data) => {
   try { await setDoc(GLOBALS_REF(), data); } catch(_) {}
 };
 
+const SECURITY_REF = () => doc(db, 'config', 'security');
+const loadSecurity = async () => {
+  try {
+    const snap = await getDoc(SECURITY_REF());
+    return snap.exists() ? snap.data() : {};
+  } catch(_) { return {}; }
+};
+
 export default function App() {
   const [view,setView]             = useState('home');
   const [unions,setUnions]         = useState([]);
@@ -129,15 +145,20 @@ export default function App() {
   const [bgImage,setBgImage]       = useState('');
   const [globalBG,setGlobalBG] = useState('');
   const saveGlobalBG = async(url) => { setGlobalBG(url); await saveGlobals({bgImage:url}); };
+  const [security,setSecurity] = useState({});
+  const [accessCode,setAccessCode] = useState('');
+  const saveAccessCode = async(code) => { setAccessCode(code); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode:code}); };
   
   // Load union list on startup
   useEffect(()=>{
-    (async()=>{
-      const list = await loadUnions();
-      setUnions(list);
-      const globals = await loadGlobals();
-      setGlobalBG(globals.bgImage||'');
-      setLoading(false);
+  (async()=>{
+    const list = await loadUnions();
+    setUnions(list);
+    const globals = await loadGlobals();
+    setGlobalBG(globals.bgImage||'');
+    const sec = await loadSecurity();
+    setSecurity(sec);
+    setLoading(false);
     })();
   },[]);
 
@@ -153,6 +174,7 @@ export default function App() {
         setMembers(p.members||activeUnion.members||[]);
         setSyncLevels(p.syncLevels||{});
         setBgImage(p.bgImage||'');
+        setAccessCode(p.accessCode||'');
       } else {
         // First time — initialise from union definition
         setAll({});
@@ -160,6 +182,7 @@ export default function App() {
         setMembers(activeUnion.members||[]);
         setSyncLevels({});
         setBgImage('');
+        setAccessCode('');
       }
       setLoading(false);
     })();
@@ -174,7 +197,7 @@ export default function App() {
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
-  const handleUnionSelect = (union) => { setActiveUnion(union); setView('login'); };
+  const handleUnionSelect = (union) => { setActiveUnion(union); setView('code'); };
   const handleMemberSelect = (name) => {
     setMember(name);
     setView(syncLevels[name] ? 'member' : 'sync');
@@ -191,11 +214,12 @@ export default function App() {
   );
 
   if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={globalBG}/>;
-  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG}/>;
+  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG} security={security}/>;
   const unionBG = bgImage || globalBG;
   if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome} bgImage={unionBG}/>;
   if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={unionBG}/>;
-  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG}/>;
+  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode}/>;
+  if(view==='code') return <CodeView unionName={activeUnion.name} accessCode={accessCode} bgImage={globalBG} onSuccess={()=>setView('login')} onBack={()=>{setActiveUnion(null);setView('home');}}/>;
   return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack} bgImage={unionBG}/>;
 }
 
@@ -232,6 +256,11 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
 function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
+  const checkPw = async() => {
+    const hash = await hashPassword(pw);
+    if(hash===security.superAdminPasswordHash) setUnlocked(true);
+    else setPwErr(true);
+  };
   const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
   const [editGlobalBG,setEditGlobalBG]=useState(false),[draftGlobalBG,setDraftGlobalBG]=useState(bgImage||'');
 
@@ -254,9 +283,9 @@ function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG}) {
         <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
           <input type='password' placeholder='password' value={pw}
             style={{width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${pwErr?C.red:C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'}}
-            onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==='Enter'&&(pw===ADMIN_PW?setUnlocked(true):setPwErr(true))}/>
+            onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==='Enter'&&checkPw()}/>
           {pwErr&&<p style={{color:C.red,fontSize:12,margin:'-8px 0 0'}}>Wrong password</p>}
-          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer'}} onClick={()=>pw===ADMIN_PW?setUnlocked(true):setPwErr(true)}>Unlock</button>
+          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer'}} onClick={checkPw}>Unlock</button>
           <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={onBack}>← back</button>
         </div>
       </div>
@@ -355,6 +384,39 @@ function SyncView({name,onConfirm,onBack,bgImage}) {
           </button>
           <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer',opacity:val?1:0.4}} disabled={!val} onClick={()=>onConfirm(val)}>
             Continue →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CodeView({unionName,accessCode,bgImage,onSuccess,onBack}) {
+  const [val,setVal]=useState('');
+  const [err,setErr]=useState(false);
+  const check = () => {
+    if(!accessCode||val===accessCode) { onSuccess(); }
+    else { setErr(true); setVal(''); }
+  };
+  return (
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:bgImage?`url(${bgImage}), url(${bgImage})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Helvetica, Arial, sans-serif'}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
+        <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
+          <div style={{fontSize:40,marginBottom:8}}>🔒</div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>{unionName}</h1>
+          <p style={{fontSize:13,color:C.mut,margin:'4px 0 0'}}>Enter union access code</p>
+        </div>
+        <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
+          <input type='password' placeholder='Access code' value={val}
+            style={{width:'100%',padding:'10px 12px',fontSize:20,border:`1px solid ${err?C.red:C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box',textAlign:'center',letterSpacing:4}}
+            onChange={e=>{setVal(e.target.value);setErr(false);}}
+            onKeyDown={e=>e.key==='Enter'&&check()}/>
+          {err&&<p style={{color:C.red,fontSize:12,margin:'-8px 0 0',textAlign:'center'}}>Wrong code, try again</p>}
+          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer',opacity:val?1:0.4}} disabled={!val} onClick={check}>
+            Enter →
+          </button>
+          <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:'none',cursor:'pointer'}} onClick={onBack}>
+            ← back to unions
           </button>
         </div>
       </div>
@@ -534,9 +596,14 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   </>;
 }
 
-function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel,onSaveBG,bgImage}) {
+function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOverride,onSaveBN,onSaveMembers,onWipe,onExport,getData,onSaveSyncLevel,onSaveBG,bgImage,security,accessCode,onSaveAccessCode}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
+  const checkPw = async() => {
+    const hash = await hashPassword(pw);
+    if(hash===security.adminPasswordHash) setUnlocked(true);
+    else setPwErr(true);
+  };
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
   const [hideActualUsed,setHideActualUsed]=useState(false);
   const [editMember,setEditMember]=useState(null);
@@ -544,6 +611,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const [editMems,setEditMems]=useState(false),[draftMems,setDraftMems]=useState(members.join('\n'));
   const [expandRun,setExpandRun]=useState(null),[confirmWipe,setConfirmWipe]=useState(false);
   const [editBG,setEditBG]=useState(false),[draftBG,setDraftBG]=useState(bgImage||'');
+  const [editCode,setEditCode]=useState(false),[draftCode,setDraftCode]=useState(accessCode||'');
 
   if(!unlocked) return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -555,9 +623,9 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
         </div>
         <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:12}}>
           <input type='password' placeholder='password' value={pw} style={{width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${pwErr?C.red:C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'}}
-            onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==='Enter'&&(pw===ADMIN_PW?setUnlocked(true):setPwErr(true))}/>
+            onChange={e=>{setPw(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==='Enter'&&checkPw()}/>
           {pwErr&&<p style={{color:C.red,fontSize:12,margin:'-8px 0 0'}}>Wrong password</p>}
-          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer'}} onClick={()=>pw===ADMIN_PW?setUnlocked(true):setPwErr(true)}>Unlock</button>
+          <button style={{width:'100%',padding:11,fontSize:13,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:8,cursor:'pointer'}} onClick={checkPw}>Unlock</button>
           <button style={{width:'100%',padding:10,fontSize:13,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:8,cursor:'pointer'}} onClick={onBack}>← back</button>
         </div>
       </div>
@@ -611,6 +679,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           {!editBN&&<button style={smBtn} onClick={()=>{setDraftBN([...bossNames]);setEditBN(true);}}>✏ Edit boss names</button>}
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
           {!editBG&&<button style={smBtn} onClick={()=>{setDraftBG(bgImage||'');setEditBG(true);}}>🖼 Background</button>}
+          {!editCode&&<button style={smBtn} onClick={()=>{setDraftCode(accessCode||'');setEditCode(true);}}>🔑 Access code</button>}
          
         </div>
 
@@ -643,6 +712,16 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           </div>
         </div>}
 
+        {editCode&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
+          <p style={{fontSize:12,color:C.mut,margin:0}}>Union access code (leave blank for no code):</p>
+          <input value={draftCode} placeholder='e.g. 1234' style={{...inp,fontSize:16,textAlign:'center',letterSpacing:4}} onChange={e=>setDraftCode(e.target.value)}/>
+          <div style={{display:'flex',gap:8}}>
+            <button style={{...smBtn,color:C.txt}} onClick={()=>{onSaveAccessCode(draftCode);setEditCode(false);}}>Save</button>
+            <button style={{...smBtn,color:C.red}} onClick={()=>{onSaveAccessCode('');setDraftCode('');setEditCode(false);}}>Remove</button>
+            <button style={smBtn} onClick={()=>setEditCode(false)}>Cancel</button>
+          </div>
+        </div>}
+                
         <div style={{display:'flex',gap:6,padding:'0 1rem 1rem',flexWrap:'wrap'}}>
           {Array(BOSSES).fill(0).map((_,bi)=><button key={bi} onClick={()=>setBoss(bi)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'8px 12px',borderRadius:8,cursor:'pointer',minWidth:72,border:`1px solid ${bi===boss?'#4a5280':C.bdr}`,background:bi===boss?C.surf2:'transparent',color:C.txt}}>
             <span style={{fontSize:11,fontWeight:600}}>{bossNames[bi]}</span>
