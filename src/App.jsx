@@ -332,6 +332,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,security}) 
             </div>
           ))}
         </div>
+        <ChangePasswordPanel security={security} onSave={()=>{}} />
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -806,6 +807,47 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+function ChangePasswordPanel({security,onSave}) {
+  const [newAdminPw,setNewAdminPw]=useState('');
+  const [newSuperPw,setNewSuperPw]=useState('');
+  const [saved,setSaved]=useState(false);
+
+  const handleSave = async() => {
+    const updates = {...security};
+    if(newAdminPw) updates.adminPasswordHash = await hashPassword(newAdminPw);
+    if(newSuperPw) updates.superAdminPasswordHash = await hashPassword(newSuperPw);
+    await setDoc(doc(db,'config','security'), updates);
+    setSaved(true);
+    setNewAdminPw(''); setNewSuperPw('');
+    setTimeout(()=>setSaved(false),2000);
+  };
+
+  return (
+    <div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:12,borderTop:`1px solid ${C.bdr}`}}>
+      <p style={{fontSize:12,fontWeight:700,color:C.mut,margin:0,textTransform:'uppercase',letterSpacing:1}}>Change Passwords</p>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+        <label style={{fontSize:11,color:C.mut}}>New Admin password (leave blank to keep current)</label>
+        <input type='password' value={newAdminPw} placeholder='New admin password'
+          style={{width:'100%',padding:'8px 10px',fontSize:13,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt,boxSizing:'border-box'}}
+          onChange={e=>setNewAdminPw(e.target.value)}/>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+        <label style={{fontSize:11,color:C.mut}}>New Super Admin password (leave blank to keep current)</label>
+        <input type='password' value={newSuperPw} placeholder='New super admin password'
+          style={{width:'100%',padding:'8px 10px',fontSize:13,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt,boxSizing:'border-box'}}
+          onChange={e=>setNewSuperPw(e.target.value)}/>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        <button style={{padding:'6px 16px',fontSize:12,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:6,cursor:'pointer',opacity:(newAdminPw||newSuperPw)?1:0.4}}
+          disabled={!newAdminPw&&!newSuperPw} onClick={handleSave}>
+          Save passwords
+        </button>
+        {saved&&<span style={{fontSize:12,color:C.grn}}>✓ Saved!</span>}
+      </div>
     </div>
   );
 }
