@@ -696,8 +696,8 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           {!editBN&&<button style={smBtn} onClick={()=>{setDraftBN([...bossNames]);setEditBN(true);}}>✏ Edit boss names</button>}
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
           {!editBG&&<button style={smBtn} onClick={()=>{setDraftBG(bgImage||'');setEditBG(true);}}>🖼 Background</button>}
-          {!editCode&&<button style={smBtn} onClick={()=>{setDraftCode(accessCode||'');setEditCode(true);}}>🔑 Access code</button>}
-          {!editPw&&<button style={smBtn} onClick={()=>setEditPw(true)}>🔐 Change password</button>}
+          {!editCode&&<button style={smBtn} onClick={()=>{setDraftCode(accessCode||'');setEditCode(true);}}>🔑 Change union access code</button>}
+          {!editPw&&<button style={smBtn} onClick={()=>setEditPw(true)}>🔐 Change admin password</button>}
         </div>
 
         {editBN&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
