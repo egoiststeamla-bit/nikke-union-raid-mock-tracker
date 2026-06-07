@@ -228,7 +228,7 @@ export default function App() {
   );
 
   if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={globalBG}/>;
-  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG} security={security}/>;
+  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG} security={security} onUpdateSecurity={setSecurity}/>;
   const unionBG = bgImage || globalBG;
   if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome} bgImage={unionBG}/>;
   if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={unionBG}/>;
@@ -267,13 +267,12 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
 }
 
 // ── Super Admin: manage unions ────────────────────────────────────────────────
-function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,adminPasswordHash,onSaveAdminPassword,security}) {
+function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,security,onUpdateSecurity}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const checkPw = async() => {
     const hash = await hashPassword(pw);
-    const validHash = adminPasswordHash || security.adminPasswordHash;
-    if(hash===validHash) setUnlocked(true);
+    if(hash===security.superAdminPasswordHash) setUnlocked(true);
     else setPwErr(true);
   };
   const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
@@ -347,7 +346,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,adminPasswo
             </div>
           ))}
         </div>
-        <ChangePasswordPanel security={security} onSave={()=>{}} />
+        <ChangePasswordPanel security={security} onSave={onUpdateSecurity} />
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -617,7 +616,8 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const checkPw = async() => {
     const hash = await hashPassword(pw);
-    if(hash===security.adminPasswordHash) setUnlocked(true);
+    const validHash = adminPasswordHash || security.adminPasswordHash;
+    if(hash===validHash) setUnlocked(true);
     else setPwErr(true);
   };
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
@@ -854,6 +854,7 @@ function ChangePasswordPanel({security,onSave}) {
     if(newAdminPw) updates.adminPasswordHash = await hashPassword(newAdminPw);
     if(newSuperPw) updates.superAdminPasswordHash = await hashPassword(newSuperPw);
     await setDoc(doc(db,'config','security'), updates);
+    onSave(updates);
     setSaved(true);
     setNewAdminPw(''); setNewSuperPw('');
     setTimeout(()=>setSaved(false),2000);
