@@ -55,6 +55,7 @@ const loadUnion = async (unionId) => {
       syncLevels: p.syncLevels || {},
       bgImage: p.bgImage || '',
       accessCode: p.accessCode || '',
+      adminPasswordHash: p.adminPasswordHash || '',
       data: Object.fromEntries(
         Object.entries(p.data || {}).map(([member, d]) => [
           member,
@@ -81,6 +82,7 @@ const saveUnion = async (unionId, payload) => {
       syncLevels: payload.syncLevels || {},
       bgImage: payload.bgImage || '',
       accessCode: payload.accessCode || '',
+      adminPasswordHash: payload.adminPasswordHash || '',
       data: Object.fromEntries(
         Object.entries(payload.data).map(([member, d]) => [
           member,
@@ -148,6 +150,11 @@ export default function App() {
   const [security,setSecurity] = useState({});
   const [accessCode,setAccessCode] = useState('');
   const saveAccessCode = async(code) => { setAccessCode(code); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode:code}); };
+  const [adminPasswordHash,setAdminPasswordHash] = useState('');
+  const saveAdminPassword = async(hash) => {
+    setAdminPasswordHash(hash);
+    await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode,adminPasswordHash:hash});
+  };
   
   // Load union list on startup
   useEffect(()=>{
@@ -175,14 +182,18 @@ export default function App() {
         setSyncLevels(p.syncLevels||{});
         setBgImage(p.bgImage||'');
         setAccessCode(p.accessCode||'');
+        setAdminPasswordHash(p.adminPasswordHash||'');
+        // skip code gate if no access code set
+        setView(v => v==='code' ? (p.accessCode ? 'code' : 'login') : v);
       } else {
-        // First time — initialise from union definition
         setAll({});
         setBN([...DEFAULT_BOSS_NAMES]);
         setMembers(activeUnion.members||[]);
         setSyncLevels({});
         setBgImage('');
         setAccessCode('');
+        setAdminPasswordHash('');
+        setView(v => v==='code' ? 'login' : v);
       }
       setLoading(false);
     })();
@@ -197,7 +208,10 @@ export default function App() {
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
-  const handleUnionSelect = (union) => { setActiveUnion(union); setView('code'); };
+  const handleUnionSelect = (union) => {
+    setActiveUnion(union);
+    setView('code');
+  };
   const handleMemberSelect = (name) => {
     setMember(name);
     setView(syncLevels[name] ? 'member' : 'sync');
@@ -218,7 +232,7 @@ export default function App() {
   const unionBG = bgImage || globalBG;
   if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome} bgImage={unionBG}/>;
   if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={unionBG}/>;
-  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode}/>;
+  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode} adminPasswordHash={adminPasswordHash} onSaveAdminPassword={saveAdminPassword}/>;
   if(view==='code') return <CodeView unionName={activeUnion.name} accessCode={accessCode} bgImage={globalBG} onSuccess={()=>setView('login')} onBack={()=>{setActiveUnion(null);setView('home');}}/>;
   return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack} bgImage={unionBG}/>;
 }
@@ -253,12 +267,13 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
 }
 
 // ── Super Admin: manage unions ────────────────────────────────────────────────
-function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,security}) {
+function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,adminPasswordHash,onSaveAdminPassword,security}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const checkPw = async() => {
     const hash = await hashPassword(pw);
-    if(hash===security.superAdminPasswordHash) setUnlocked(true);
+    const validHash = adminPasswordHash || security.adminPasswordHash;
+    if(hash===validHash) setUnlocked(true);
     else setPwErr(true);
   };
   const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
@@ -613,6 +628,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const [expandRun,setExpandRun]=useState(null),[confirmWipe,setConfirmWipe]=useState(false);
   const [editBG,setEditBG]=useState(false),[draftBG,setDraftBG]=useState(bgImage||'');
   const [editCode,setEditCode]=useState(false),[draftCode,setDraftCode]=useState(accessCode||'');
+  const [editPw,setEditPw]=useState(false),[newPw,setNewPw]=useState(''),[pwSaved,setPwSaved]=useState(false);
 
   if(!unlocked) return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -681,7 +697,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           {!editMems&&<button style={smBtn} onClick={()=>{setDraftMems(members.join('\n'));setEditMems(true);}}>👥 Edit member list</button>}
           {!editBG&&<button style={smBtn} onClick={()=>{setDraftBG(bgImage||'');setEditBG(true);}}>🖼 Background</button>}
           {!editCode&&<button style={smBtn} onClick={()=>{setDraftCode(accessCode||'');setEditCode(true);}}>🔑 Access code</button>}
-         
+          {!editPw&&<button style={smBtn} onClick={()=>setEditPw(true)}>🔐 Change password</button>}
         </div>
 
         {editBN&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
@@ -722,7 +738,24 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
             <button style={smBtn} onClick={()=>setEditCode(false)}>Cancel</button>
           </div>
         </div>}
-                
+
+        {editPw&&<div style={{padding:'0 1rem 1rem',display:'flex',flexDirection:'column',gap:8}}>
+          <p style={{fontSize:12,color:C.mut,margin:0}}>New admin password for this union:</p>
+          <input type='password' value={newPw} placeholder='New password'
+            style={{...inp,fontSize:13}} onChange={e=>setNewPw(e.target.value)}/>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <button style={{...smBtn,color:C.txt,opacity:newPw?1:0.4}} disabled={!newPw} onClick={async()=>{
+              const hash=await hashPassword(newPw);
+              await onSaveAdminPassword(hash);
+              setNewPw(''); setPwSaved(true);
+              setTimeout(()=>setPwSaved(false),2000);
+              setEditPw(false);
+            }}>Save</button>
+            <button style={smBtn} onClick={()=>{setEditPw(false);setNewPw('');}}>Cancel</button>
+            {pwSaved&&<span style={{fontSize:12,color:C.grn}}>✓ Saved!</span>}
+          </div>
+        </div>}
+        
         <div style={{display:'flex',gap:6,padding:'0 1rem 1rem',flexWrap:'wrap'}}>
           {Array(BOSSES).fill(0).map((_,bi)=><button key={bi} onClick={()=>setBoss(bi)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'8px 12px',borderRadius:8,cursor:'pointer',minWidth:72,border:`1px solid ${bi===boss?'#4a5280':C.bdr}`,background:bi===boss?C.surf2:'transparent',color:C.txt}}>
             <span style={{fontSize:11,fontWeight:600}}>{bossNames[bi]}</span>
