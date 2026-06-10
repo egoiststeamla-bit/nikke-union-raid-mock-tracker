@@ -288,7 +288,7 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage,bgImage2}) {
 }
 
 // ── Super Admin: manage unions ────────────────────────────────────────────────
-function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,security,onUpdateSecurity}) {
+function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,onSaveGlobalBG2,security,onUpdateSecurity}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const checkPw = async() => {
