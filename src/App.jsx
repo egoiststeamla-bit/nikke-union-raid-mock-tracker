@@ -148,8 +148,18 @@ export default function App() {
   const [saving,setSaving]         = useState(false);
   const [bgImage,setBgImage]       = useState('');
   const [bgImage2,setBgImage2] = useState('');
-  const [globalBG,setGlobalBG] = useState('');
-  const saveGlobalBG = async(url) => { setGlobalBG(url); await saveGlobals({bgImage:url}); };
+  const [globalBG, setGlobalBG] = useState('');
+  const [globalBG2, setGlobalBG2] = useState('');
+
+  const saveGlobalBG = async (url) => { 
+    setGlobalBG(url); 
+    await saveGlobals({ bgImage: url, bgImage2: globalBG2 }); 
+  };
+
+  const saveGlobalBG2 = async (url) => { 
+    setGlobalBG2(url); 
+    await saveGlobals({ bgImage: globalBG, bgImage2: url }); 
+  };
   const [security,setSecurity] = useState({});
   const [accessCode,setAccessCode] = useState('');
   const saveAccessCode = async(code) => { setAccessCode(code); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode:code}); };
@@ -160,17 +170,19 @@ export default function App() {
   };
   
   // Load union list on startup
-  useEffect(()=>{
-  (async()=>{
-    const list = await loadUnions();
-    setUnions(list);
-    const globals = await loadGlobals();
-    setGlobalBG(globals.bgImage||'');
-    const sec = await loadSecurity();
-    setSecurity(sec);
-    setLoading(false);
+  // Load union list on startup
+  useEffect(() => {
+    (async () => {
+      const list = await loadUnions();
+      setUnions(list);
+      const globals = await loadGlobals();
+      setGlobalBG(globals.bgImage || '');
+      setGlobalBG2(globals.bgImage2 || '');
+      const sec = await loadSecurity();
+      setSecurity(sec);
+      setLoading(false);
     })();
-  },[]);
+  }, []);
 
   // Load union data when activeUnion changes
   useEffect(()=>{
@@ -233,14 +245,17 @@ export default function App() {
     </div>
   );
 
-  if(view==='home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={()=>setView('superadmin')} bgImage={globalBG}/>;
-  if(view==='superadmin') return <SuperAdminView unions={unions} onSave={async(list)=>{setUnions(list);await saveUnions(list);}} onBack={()=>setView('home')} bgImage={globalBG} onSaveGlobalBG={saveGlobalBG} security={security} onUpdateSecurity={setSecurity}/>;
-  const unionBG = bgImage || globalBG; 
-  if(view==='login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={()=>setView('admin')} onBack={handleBackToHome} bgImage={unionBG} bgImage2={bgImage2}/>; 
-  if(view==='sync') return <SyncView name={member} onConfirm={async(lvl)=>{ await saveSync(member,lvl); setView('member'); }} onBack={()=>{setMember(null);setView('login');}} bgImage={unionBG} bgImage2={bgImage2}/>; 
-  if(view==='admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={()=>setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={()=>exportCSV(allData,bossNames,members,syncLevels,activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} bgImage2={bgImage2} onSaveBG2={saveBG2} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode} adminPasswordHash={adminPasswordHash} onSaveAdminPassword={saveAdminPassword}/>; 
-  if(view==='code') return <CodeView unionName={activeUnion.name} accessCode={accessCode} bgImage={unionBG} bgImage2={bgImage2} onSuccess={()=>setView('login')} onBack={()=>{setActiveUnion(null);setView('home');}}/>; 
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d=>save(member,d)} onBack={handleBack} bgImage={unionBG} bgImage2={bgImage2}/>;
+  if (view === 'home') return <HomeView unions={unions} onSelectUnion={handleUnionSelect} onAdmin={() => setView('superadmin')} bgImage={globalBG} bgImage2={globalBG2} />;
+  if (view === 'superadmin') return <SuperAdminView unions={unions} onSave={async (list) => { setUnions(list); await saveUnions(list); }} onBack={() => setView('home')} bgImage={globalBG} bgImage2={globalBG2} onSaveGlobalBG={saveGlobalBG} onSaveGlobalBG2={saveGlobalBG2} security={security} onUpdateSecurity={setSecurity} />;
+  
+  const unionBG = bgImage || globalBG;
+  const unionBG2 = bgImage2 || globalBG2;
+  
+  if (view === 'login') return <LoginView unionName={activeUnion.name} members={members} onMember={handleMemberSelect} onAdmin={() => setView('admin')} onBack={handleBackToHome} bgImage={unionBG} bgImage2={unionBG2} />;
+  if (view === 'sync') return <SyncView name={member} onConfirm={async (lvl) => { await saveSync(member, lvl); setView('member'); }} onBack={() => { setMember(null); setView('login'); }} bgImage={unionBG} bgImage2={unionBG2} />;
+  if (view === 'admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={() => setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={() => exportCSV(allData, bossNames, members, syncLevels, activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} bgImage2={unionBG2} onSaveBG2={saveBG2} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode} adminPasswordHash={adminPasswordHash} onSaveAdminPassword={saveAdminPassword} />;
+  if (view === 'code') return <CodeView unionName={activeUnion.name} accessCode={accessCode} bgImage={unionBG} bgImage2={unionBG2} onSuccess={() => setView('login')} onBack={() => { setActiveUnion(null); setView('home'); }} />;
+  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d => save(member, d)} onBack={handleBack} bgImage={unionBG} bgImage2={unionBG2} />;
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
@@ -283,6 +298,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,se
   };
   const [draft,setDraft]=useState(JSON.parse(JSON.stringify(unions)));
   const [editGlobalBG,setEditGlobalBG]=useState(false),[draftGlobalBG,setDraftGlobalBG]=useState(bgImage||'');
+  const [editGlobalBG2, setEditGlobalBG2] = useState(false), [draftGlobalBG2, setDraftGlobalBG2] = useState(bgImage2 || '');
 
   const addUnion = () => {
     const id = `union${Date.now()}`;
@@ -333,6 +349,15 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,se
             <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.txt,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG(draftGlobalBG);setEditGlobalBG(false);}}>Apply</button>
             <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.red,border:`1px solid ${C.red}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG('');setDraftGlobalBG('');setEditGlobalBG(false);}}>Remove</button>
             <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>setEditGlobalBG(false)}>Cancel</button>
+          </div>
+        </div>}
+        {editGlobalBG2 && <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${C.bdr}` }}>
+          <p style={{ fontSize: 12, color: C.mut, margin: 0 }}>Global background 2 URL (right side):</p>
+          <input value={draftGlobalBG2} placeholder='https://...' style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.bdr}`, borderRadius: 6, background: C.surf, color: C.txt, boxSizing: 'box-sizing' }} onChange={e => setDraftGlobalBG2(e.target.value)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.txt, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG2(draftGlobalBG2); setEditGlobalBG2(false); }}>Apply</button>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.red, border: `1px solid ${C.red}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG2(''); setDraftGlobalBG2(''); setEditGlobalBG2(false); }}>Remove</button>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => setEditGlobalBG2(false)}>Cancel</button>
           </div>
         </div>}
         <div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:16}}>
