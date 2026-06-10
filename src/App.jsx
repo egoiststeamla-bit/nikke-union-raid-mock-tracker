@@ -364,7 +364,8 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,se
           />
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.txt, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG2(draftGlobalBG2); setEditGlobalBG2(false); }}>Apply</button>
-            {/* ... rest of buttons ... */}
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.red, border: `1px solid ${C.red}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG(''); setDraftGlobalBG(''); setEditGlobalBG(false); }}>Remove</button>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => setEditGlobalBG(false)}>Cancel</button>
           </div>
         </div>}
         <div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:16}}>
