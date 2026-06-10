@@ -336,10 +336,11 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,se
             <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
             <h2 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Manage Unions</h2>
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.grn,border:`1px solid ${C.grn}`,borderRadius:6,cursor:'pointer'}} onClick={addUnion}>+ Add Union</button>
-            <button style={{padding:'6px 14px',fontSize:12,fontWeight:600,background:C.txt,color:C.bg,border:'none',borderRadius:6,cursor:'pointer'}} onClick={()=>onSave(draft)}>Save All</button>
-            <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{setDraftGlobalBG(bgImage||'');setEditGlobalBG(true);}}>🖼 Global BG</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ padding: '6px 14px', fontSize: 12, background: 'transparent', color: C.grn, border: `1px solid ${C.grn}`, borderRadius: 6, cursor: 'pointer' }} onClick={addUnion}>+ Add Union</button>
+            <button style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: C.txt, color: C.bg, border: 'none', borderRadius: 6, cursor: 'pointer' }} onClick={() => onSave(draft)}>Save All</button>
+            <button style={{ padding: '6px 14px', fontSize: 12, background: 'transparent', color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { setDraftGlobalBG(bgImage || ''); setEditGlobalBG(true); }}>🖼 Global BG 1</button>
+            <button style={{ padding: '6px 14px', fontSize: 12, background: 'transparent', color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { setDraftGlobalBG2(bgImage2 || ''); setEditGlobalBG2(true); }}>🖼 Global BG 2</button>
           </div>
         </div>
         {editGlobalBG && <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${C.bdr}` }}>
