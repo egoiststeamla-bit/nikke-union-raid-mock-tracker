@@ -342,13 +342,13 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,se
             <button style={{padding:'6px 14px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{setDraftGlobalBG(bgImage||'');setEditGlobalBG(true);}}>🖼 Global BG</button>
           </div>
         </div>
-        {editGlobalBG&&<div style={{padding:'1rem',display:'flex',flexDirection:'column',gap:8,borderBottom:`1px solid ${C.bdr}`}}>
-          <p style={{fontSize:12,color:C.mut,margin:0}}>Global background URL (applies to all pages by default):</p>
-          <input value={draftGlobalBG} placeholder='https://...' style={{width:'100%',padding:'8px 10px',fontSize:12,border:`1px solid ${C.bdr}`,borderRadius:6,background:C.surf,color:C.txt,boxSizing:'border-box'}} onChange={e=>setDraftGlobalBG(e.target.value)}/>
-          <div style={{display:'flex',gap:8}}>
-            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.txt,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG(draftGlobalBG);setEditGlobalBG(false);}}>Apply</button>
-            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.red,border:`1px solid ${C.red}`,borderRadius:6,cursor:'pointer'}} onClick={()=>{onSaveGlobalBG('');setDraftGlobalBG('');setEditGlobalBG(false);}}>Remove</button>
-            <button style={{padding:'5px 12px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>setEditGlobalBG(false)}>Cancel</button>
+        {editGlobalBG && <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${C.bdr}` }}>
+          <p style={{ fontSize: 12, color: C.mut, margin: 0 }}>Global background 1 URL (left side):</p>
+          <input value={draftGlobalBG} placeholder='https://...' style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.bdr}`, borderRadius: 6, background: C.surf, color: C.txt, boxSizing: 'border-box' }} onChange={e => setDraftGlobalBG(e.target.value)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.txt, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG(draftGlobalBG); setEditGlobalBG(false); }}>Apply</button>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.red, border: `1px solid ${C.red}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => { onSaveGlobalBG(''); setDraftGlobalBG(''); setEditGlobalBG(false); }}>Remove</button>
+            <button style={{ padding: '5px 12px', fontSize: 12, background: 'transparent', color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 6, cursor: 'pointer' }} onClick={() => setEditGlobalBG(false)}>Cancel</button>
           </div>
         </div>}
         {editGlobalBG2 && <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${C.bdr}` }}>
