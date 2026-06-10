@@ -244,9 +244,9 @@ export default function App() {
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
-function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
+function HomeView({unions,onSelectUnion,onAdmin,bgImage,bgImage2}) {
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage||bgImage2)?`url(${bgImage||''}), url(${bgImage2||bgImage||''})`:'none',,backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage||bgImage2)?`url(${bgImage||''}), url(${bgImage2||bgImage||''})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:440,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
@@ -273,7 +273,7 @@ function HomeView({unions,onSelectUnion,onAdmin,bgImage}) {
 }
 
 // ── Super Admin: manage unions ────────────────────────────────────────────────
-function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,security,onUpdateSecurity}) {
+function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,security,onUpdateSecurity}) {
   const [unlocked,setUnlocked]=useState(false);
   const [pw,setPw]=useState(''),[pwErr,setPwErr]=useState(false);
   const checkPw = async() => {
@@ -360,7 +360,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,onSaveGlobalBG,security,on
 }
 
 // ── Login: pick member within a union ────────────────────────────────────────
-function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage}) {
+function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage,bgImage2}) {
   const [sel,setSel]=useState('');
   return (
     <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage||bgImage2)?`url(${bgImage||''}), url(${bgImage2||bgImage||''})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -386,7 +386,7 @@ function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage}) {
   );
 }
 
-function SyncView({name,onConfirm,onBack,bgImage}) {
+function SyncView({name,onConfirm,onBack,bgImage,bgImage2}) {
   const [val,setVal]=useState('');
   return (
     <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage||bgImage2)?`url(${bgImage||''}), url(${bgImage2||bgImage||''})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
@@ -412,7 +412,7 @@ function SyncView({name,onConfirm,onBack,bgImage}) {
   );
 }
 
-function CodeView({unionName,accessCode,bgImage,onSuccess,onBack}) {
+function CodeView({unionName,accessCode,bgImage,bgImage2,onSuccess,onBack}) {
   const [val,setVal]=useState('');
   const [err,setErr]=useState(false);
   const check = () => {
@@ -445,7 +445,7 @@ function CodeView({unionName,accessCode,bgImage,onSuccess,onBack}) {
   );
 }
 
-function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit,bgImage}) {
+function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit,bgImage,bgImage2}) {
   const [boss,setBoss]=useState(0);
   const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
