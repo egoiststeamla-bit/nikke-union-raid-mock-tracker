@@ -135,6 +135,8 @@ const loadSecurity = async () => {
   } catch(_) { return {}; }
 };
 
+let debounceTimer;
+
 export default function App() {
   const [view,setView]             = useState('home');
   const [unions,setUnions]         = useState([]);
@@ -216,7 +218,15 @@ export default function App() {
     })();
   },[activeUnion]);
 
-  const persist = (data,bn,mems,syncs) => saveUnion(activeUnion.id,{data,bossNames:bn,members:mems,syncLevels:syncs,bgImage,bgImage2,accessCode,adminPasswordHash});
+  const persist = (data, bn, mems, syncs) => {
+    return new Promise(resolve => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        await saveUnion(activeUnion.id, { data, bossNames: bn, members: mems, syncLevels: syncs, bgImage, bgImage2, accessCode, adminPasswordHash });
+        resolve();
+      }, 500); // Waits 0.5 seconds after you stop typing before saving
+    });
+  };
   const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
@@ -637,7 +647,7 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
             {valid.map((run,ri)=><div key={ri} style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',padding:'4px 6px',background:C.surf2,borderRadius:6,border:`1px solid ${run.isActual?C.gld+'60':C.bdr}`}}>
               <span style={{fontSize:10,color:C.mut,flexShrink:0,minWidth:20}}>R{ri+1}</span>
               <span style={{fontSize:11,fontWeight:700,color:run.isActual?C.gld:C.grn,flexShrink:0}}>{fmt(run.damage)}</span>
-              <div style={{display:'flex',flexWrap:'wrap',gap:2,flex:1}}>{run.units.filter(Boolean).map((u,ui)=><span key={ui} style={pill(C.surf2,C.mut)}>{u}</span>)}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:2,flex:1}}>{run.units.filter(Boolean).map((u,ui)=><span key={ui} style={pill(C.surf2,C.txt)}>{u}</span>)}</div>
               <div style={{display:'flex',alignItems:'center',gap:4}}>
                 {run.hasConflict&&<span style={{fontSize:9,color:C.red,flexShrink:0}}>🚫REPEAT</span>}
                 {run.isActual&&<span style={{fontSize:9,color:C.gld,flexShrink:0}}>✓ACT</span>}
