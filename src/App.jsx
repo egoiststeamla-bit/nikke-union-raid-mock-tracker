@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
 //const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
@@ -171,24 +171,14 @@ export default function App() {
     await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode,adminPasswordHash:hash});
   };
 
-  const updateUnionField = async (unionId, fieldName, value) => {
+  const saveField = async (unionId, fieldData) => {
     try {
       const unionRef = doc(db, 'data', unionId);
-      // Use [fieldName] to dynamically update just that one key
-      await updateDoc(unionRef, {
-        [fieldName]: value
-      });
-      console.log(`Updated ${fieldName} successfully!`);
+      // { merge: true } is the secret to safe saving!
+      await setDoc(unionRef, fieldData, { merge: true });
+      console.log("Saved successfully!");
     } catch (e) {
-      console.error("Error updating field:", e);
-    }
-  };
-
-  const ensureDocumentExists = async (id) => {
-    const ref = doc(db, 'data', id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, { members: [], syncLevels: {}, data: [] });
+      console.error("Firebase Error:", e);
     }
   };
   
@@ -212,9 +202,6 @@ export default function App() {
   
     (async () => {
       setLoading(true);
-  
-      // 1. PERFORM THE CHECK: Ensure the doc exists in Firestore before we try to read it
-      await ensureDocumentExists(activeUnion.id);
   
       // 2. NOW LOAD THE DATA: It is safe to load now because we know the doc exists
       const p = await loadUnion(activeUnion.id);
@@ -284,48 +271,49 @@ export default function App() {
     setSaving(true);
     const next = { ...allData, [n]: d };
     setAll(next);
-    await updateDoc(doc(db, 'data', activeUnion.id), { data: next });
+    await saveField(activeUnion.id, { data: next });
     setSaving(false);
   };
   
   // 2. Save Boss Names
   const saveBN = async (n) => {
     setBN(n);
-    await updateDoc(doc(db, 'data', activeUnion.id), { bossNames: n });
+    await saveField(activeUnion.id, { bossNames: n });
   };
   
   // 3. Save Members
   const saveMems = async (m) => {
     setMembers(m);
-    await updateDoc(doc(db, 'data', activeUnion.id), { members: m });
+    await saveField(activeUnion.id, { members: m });
   };
   
   // 4. Save Sync Levels
   const saveSync = async (name, lvl) => {
     const next = { ...syncLevels, [name]: lvl };
     setSyncLevels(next);
-    // Using dot notation to update only this one entry
-    await updateDoc(doc(db, 'data', activeUnion.id), { [`syncLevels.${name}`]: lvl });
+    // Note: Dot notation inside an object key works for merge too!
+    await saveField(activeUnion.id, { [`syncLevels.${name}`]: lvl });
   };
   
   // 5. Save Backgrounds
   const saveBG = async (url) => {
     setBgImage(url);
-    await updateDoc(doc(db, 'data', activeUnion.id), { bgImage: url });
+    await saveField(activeUnion.id, { bgImage: url });
   };
   
   const saveBG2 = async (url) => {
     setBgImage2(url);
-    await updateDoc(doc(db, 'data', activeUnion.id), { bgImage2: url });
+    await saveField(activeUnion.id, { bgImage2: url });
   };
   
-  // 6. Wipe (This one is special!)
+  // 6. Wipe
   const wipe = async () => {
     setAll({});
     setSyncLevels({});
-    // For wipe, you DO want to overwrite, so updateDoc is fine here too
-    await updateDoc(doc(db, 'data', activeUnion.id), { data: {}, syncLevels: {} });
+    // When wiping, we set the fields to empty objects
+    await saveField(activeUnion.id, { data: {}, syncLevels: {} });
   };
+  
   const getData = n => allData[n]??emptyData();
 
   const handleUnionSelect = (union) => {
