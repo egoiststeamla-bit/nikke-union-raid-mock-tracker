@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+//rev1
+//import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
 //const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
@@ -135,6 +137,29 @@ const loadSecurity = async () => {
   } catch(_) { return {}; }
 };
 
+//rev1
+const saveMemberData = async (unionId, memberName, memberData) => {
+  try {
+    const ref = unionDocRef(unionId);
+    const cleaned = {
+      doubleHit: memberData.doubleHit,
+      runs: Object.fromEntries(
+        memberData.runs.map((bossRuns, bi) => [
+          `boss_${bi}`,
+          Object.fromEntries(bossRuns.map((run, ri) => [`run_${ri}`, run]))
+        ])
+      )
+    };
+    await updateDoc(ref, { [`data.${memberName}`]: cleaned });
+  } catch(e) { console.error('Member save failed:', e); }
+};
+
+const saveSyncData = async (unionId, memberName, level) => {
+  try {
+    await updateDoc(unionDocRef(unionId), { [`syncLevels.${memberName}`]: level });
+  } catch(e) { console.error('Sync save failed:', e); }
+};
+
 let debounceTimer;
 
 export default function App() {
@@ -231,11 +256,17 @@ export default function App() {
       }, 500); // Waits 0.5 seconds after you stop typing before saving
     });
   };
+
+  //rev1
+  //const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
+  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await saveMemberData(activeUnion.id, n, d); setSaving(false); };
   
-  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
-  const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
+  //rev1
+  //const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
+  const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await saveSyncData(activeUnion.id, name, lvl); };
+  
   const saveBG = async(url) => { setBgImage(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage:url,bgImage2,accessCode,adminPasswordHash}); };
   const saveBG2 = async(url) => { setBgImage2(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,bgImage2:url,accessCode,adminPasswordHash}); };
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
