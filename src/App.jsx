@@ -216,7 +216,7 @@ export default function App() {
     })();
   },[activeUnion]);
 
-  const persist = (data,bn,mems,syncs) => saveUnion(activeUnion.id,{data,bossNames:bn,members:mems,syncLevels:syncs});
+  const persist = (data,bn,mems,syncs) => saveUnion(activeUnion.id,{data,bossNames:bn,members:mems,syncLevels:syncs,bgImage,bgImage2,accessCode,adminPasswordHash});
   const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
