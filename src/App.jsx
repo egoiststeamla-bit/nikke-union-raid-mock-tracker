@@ -170,17 +170,6 @@ export default function App() {
     setAdminPasswordHash(hash);
     await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode,adminPasswordHash:hash});
   };
-
-  const saveField = async (unionId, fieldData) => {
-    try {
-      const unionRef = doc(db, 'data', unionId);
-      // { merge: true } is the secret to safe saving!
-      await setDoc(unionRef, fieldData, { merge: true });
-      console.log("Saved successfully!");
-    } catch (e) {
-      console.error("Firebase Error:", e);
-    }
-  };
   
   // Load union list on startup
   useEffect(() => {
@@ -233,7 +222,7 @@ export default function App() {
     })();
   }, [activeUnion]);
 
-  /*const persist = (data, bn, mems, syncs) => {
+  const persist = (data, bn, mems, syncs) => {
     return new Promise(resolve => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
@@ -241,79 +230,15 @@ export default function App() {
         resolve();
       }, 500); // Waits 0.5 seconds after you stop typing before saving
     });
-  };*/
-
-  const updateMembers = async (newMembers) => {
-    if (!activeUnion?.id) return;
-    await updateDoc(doc(db, 'data', activeUnion.id), { members: newMembers });
   };
   
-  const updateSyncLevels = async (newSyncs) => {
-    if (!activeUnion?.id) return;
-    await updateDoc(doc(db, 'data', activeUnion.id), { syncLevels: newSyncs });
-  };
-  
-  const updateData = async (newData) => {
-    if (!activeUnion?.id) return;
-    await updateDoc(doc(db, 'data', activeUnion.id), { data: newData });
-  };
-  
-  /*const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
+  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
   const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
   const saveBG = async(url) => { setBgImage(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage:url,bgImage2,accessCode,adminPasswordHash}); };
   const saveBG2 = async(url) => { setBgImage2(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,bgImage2:url,accessCode,adminPasswordHash}); };
-  const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };*/
-  
-  // 1. Save Run Data
-  const save = async (n, d) => {
-    setSaving(true);
-    const next = { ...allData, [n]: d };
-    setAll(next);
-    await saveField(activeUnion.id, { data: next });
-    setSaving(false);
-  };
-  
-  // 2. Save Boss Names
-  const saveBN = async (n) => {
-    setBN(n);
-    await saveField(activeUnion.id, { bossNames: n });
-  };
-  
-  // 3. Save Members
-  const saveMems = async (m) => {
-    setMembers(m);
-    await saveField(activeUnion.id, { members: m });
-  };
-  
-  // 4. Save Sync Levels
-  const saveSync = async (name, lvl) => {
-    const next = { ...syncLevels, [name]: lvl };
-    setSyncLevels(next);
-    // Note: Dot notation inside an object key works for merge too!
-    await saveField(activeUnion.id, { [`syncLevels.${name}`]: lvl });
-  };
-  
-  // 5. Save Backgrounds
-  const saveBG = async (url) => {
-    setBgImage(url);
-    await saveField(activeUnion.id, { bgImage: url });
-  };
-  
-  const saveBG2 = async (url) => {
-    setBgImage2(url);
-    await saveField(activeUnion.id, { bgImage2: url });
-  };
-  
-  // 6. Wipe
-  const wipe = async () => {
-    setAll({});
-    setSyncLevels({});
-    // When wiping, we set the fields to empty objects
-    await saveField(activeUnion.id, { data: {}, syncLevels: {} });
-  };
-  
+  const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
   const handleUnionSelect = (union) => {
