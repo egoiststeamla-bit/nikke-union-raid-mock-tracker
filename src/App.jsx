@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const DEFAULT_BOSS_NAMES = ['Boss 1','Boss 2','Boss 3','Boss 4','Boss 5'];
 //const BOSSES = 5, UPR = 5, MAX_ACTUAL = 3, ADMIN_PW = 'union';
@@ -170,8 +170,28 @@ export default function App() {
     setAdminPasswordHash(hash);
     await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,accessCode,adminPasswordHash:hash});
   };
+
+  const updateUnionField = async (unionId, fieldName, value) => {
+    try {
+      const unionRef = doc(db, 'data', unionId);
+      // Use [fieldName] to dynamically update just that one key
+      await updateDoc(unionRef, {
+        [fieldName]: value
+      });
+      console.log(`Updated ${fieldName} successfully!`);
+    } catch (e) {
+      console.error("Error updating field:", e);
+    }
+  };
+
+  const ensureDocumentExists = async (id) => {
+    const ref = doc(db, 'data', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, { members: [], syncLevels: {}, data: [] });
+    }
+  };
   
-  // Load union list on startup
   // Load union list on startup
   useEffect(() => {
     (async () => {
@@ -187,38 +207,46 @@ export default function App() {
   }, []);
 
   // Load union data when activeUnion changes
-  useEffect(()=>{
-    if(!activeUnion) return;
-    (async()=>{
+  useEffect(() => {
+    if (!activeUnion) return;
+  
+    (async () => {
       setLoading(true);
+  
+      // 1. PERFORM THE CHECK: Ensure the doc exists in Firestore before we try to read it
+      await ensureDocumentExists(activeUnion.id);
+  
+      // 2. NOW LOAD THE DATA: It is safe to load now because we know the doc exists
       const p = await loadUnion(activeUnion.id);
-      if(p){
-        setAll(p.data||{});
-        setBN(p.bossNames||[...DEFAULT_BOSS_NAMES]);
-        setMembers(p.members||activeUnion.members||[]);
-        setSyncLevels(p.syncLevels||{});
-        setBgImage(p.bgImage||'');
-        setBgImage2(p.bgImage2||'');
-        setAccessCode(p.accessCode||'');
-        setAdminPasswordHash(p.adminPasswordHash||'');
-        // skip code gate if no access code set
-        setView(v => v==='code' ? (p.accessCode ? 'code' : 'login') : v);
+  
+      if (p) {
+        setAll(p.data || {});
+        setBN(p.bossNames || [...DEFAULT_BOSS_NAMES]);
+        setMembers(p.members || activeUnion.members || []);
+        setSyncLevels(p.syncLevels || {});
+        setBgImage(p.bgImage || '');
+        setBgImage2(p.bgImage2 || '');
+        setAccessCode(p.accessCode || '');
+        setAdminPasswordHash(p.adminPasswordHash || '');
+        setView(v => v === 'code' ? (p.accessCode ? 'code' : 'login') : v);
       } else {
+        // If loadUnion(activeUnion.id) returns null/undefined, 
+        // it means the doc existed but was empty, or failed to load.
         setAll({});
         setBN([...DEFAULT_BOSS_NAMES]);
-        setMembers(activeUnion.members||[]);
+        setMembers(activeUnion.members || []);
         setSyncLevels({});
         setBgImage('');
         setBgImage2('');
         setAccessCode('');
         setAdminPasswordHash('');
-        setView(v => v==='code' ? 'login' : v);
+        setView(v => v === 'code' ? 'login' : v);
       }
       setLoading(false);
     })();
-  },[activeUnion]);
+  }, [activeUnion]);
 
-  const persist = (data, bn, mems, syncs) => {
+  /*const persist = (data, bn, mems, syncs) => {
     return new Promise(resolve => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
@@ -226,14 +254,78 @@ export default function App() {
         resolve();
       }, 500); // Waits 0.5 seconds after you stop typing before saving
     });
+  };*/
+
+  const updateMembers = async (newMembers) => {
+    if (!activeUnion?.id) return;
+    await updateDoc(doc(db, 'data', activeUnion.id), { members: newMembers });
   };
-  const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
+  
+  const updateSyncLevels = async (newSyncs) => {
+    if (!activeUnion?.id) return;
+    await updateDoc(doc(db, 'data', activeUnion.id), { syncLevels: newSyncs });
+  };
+  
+  const updateData = async (newData) => {
+    if (!activeUnion?.id) return;
+    await updateDoc(doc(db, 'data', activeUnion.id), { data: newData });
+  };
+  
+  /*const save = async(n,d) => { setSaving(true); const next={...allData,[n]:d}; setAll(next); await persist(next,bossNames,members,syncLevels); setSaving(false); };
   const saveBN = async(n) => { setBN(n); await persist(allData,n,members,syncLevels); };
   const saveMems = async(m) => { setMembers(m); await persist(allData,bossNames,m,syncLevels); };
   const saveSync = async(name,lvl) => { const next={...syncLevels,[name]:lvl}; setSyncLevels(next); await persist(allData,bossNames,members,next); };
   const saveBG = async(url) => { setBgImage(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage:url,bgImage2,accessCode,adminPasswordHash}); };
   const saveBG2 = async(url) => { setBgImage2(url); await saveUnion(activeUnion.id,{data:allData,bossNames,members,syncLevels,bgImage,bgImage2:url,accessCode,adminPasswordHash}); };
-  const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
+  const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };*/
+  
+  // 1. Save Run Data
+  const save = async (n, d) => {
+    setSaving(true);
+    const next = { ...allData, [n]: d };
+    setAll(next);
+    await updateDoc(doc(db, 'data', activeUnion.id), { data: next });
+    setSaving(false);
+  };
+  
+  // 2. Save Boss Names
+  const saveBN = async (n) => {
+    setBN(n);
+    await updateDoc(doc(db, 'data', activeUnion.id), { bossNames: n });
+  };
+  
+  // 3. Save Members
+  const saveMems = async (m) => {
+    setMembers(m);
+    await updateDoc(doc(db, 'data', activeUnion.id), { members: m });
+  };
+  
+  // 4. Save Sync Levels
+  const saveSync = async (name, lvl) => {
+    const next = { ...syncLevels, [name]: lvl };
+    setSyncLevels(next);
+    // Using dot notation to update only this one entry
+    await updateDoc(doc(db, 'data', activeUnion.id), { [`syncLevels.${name}`]: lvl });
+  };
+  
+  // 5. Save Backgrounds
+  const saveBG = async (url) => {
+    setBgImage(url);
+    await updateDoc(doc(db, 'data', activeUnion.id), { bgImage: url });
+  };
+  
+  const saveBG2 = async (url) => {
+    setBgImage2(url);
+    await updateDoc(doc(db, 'data', activeUnion.id), { bgImage2: url });
+  };
+  
+  // 6. Wipe (This one is special!)
+  const wipe = async () => {
+    setAll({});
+    setSyncLevels({});
+    // For wipe, you DO want to overwrite, so updateDoc is fine here too
+    await updateDoc(doc(db, 'data', activeUnion.id), { data: {}, syncLevels: {} });
+  };
   const getData = n => allData[n]??emptyData();
 
   const handleUnionSelect = (union) => {
