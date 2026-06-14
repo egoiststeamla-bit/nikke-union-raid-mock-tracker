@@ -314,7 +314,7 @@ export default function App() {
 // ── Home: pick your union ─────────────────────────────────────────────────────
 function HomeView({unions,onSelectUnion,onAdmin,bgImage,bgImage2}) {
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:440,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
@@ -364,7 +364,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,on
   const updateMembers = (id,text) => setDraft(draft.map(u=>u.id===id?{...u,members:text.split('\n').map(s=>s.trim()).filter(Boolean)}:u));
 
   if(!unlocked) return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚙</div>
@@ -449,7 +449,7 @@ function SuperAdminView({unions,onSave,onBack,bgImage,bgImage2,onSaveGlobalBG,on
 function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage,bgImage2}) {
   const [sel,setSel]=useState('');
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>⚔</div>
@@ -475,7 +475,7 @@ function LoginView({unionName,members,onMember,onAdmin,onBack,bgImage,bgImage2})
 function SyncView({name,onConfirm,onBack,bgImage,bgImage2}) {
   const [val,setVal]=useState('');
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <h2 style={{fontSize:18,fontWeight:700,color:C.txt,margin:0}}>{name}</h2>
@@ -506,7 +506,7 @@ function CodeView({unionName,accessCode,bgImage,bgImage2,onSuccess,onBack}) {
     else { setErr(true); setVal(''); }
   };
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Helvetica, Arial, sans-serif'}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Helvetica, Arial, sans-serif'}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>🔒</div>
@@ -563,7 +563,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
   const addRun=()=>{const d=JSON.parse(JSON.stringify(data));d.runs[boss].push(emptyRun());onSave(d);};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flexShrink:0,width:'fit-content',minWidth:400,overflow:'hidden',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
@@ -808,7 +808,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const inp={width:'100%',padding:'10px 12px',fontSize:13,border:`1px solid ${C.bdr}`,borderRadius:8,background:C.surf2,color:C.txt,boxSizing:'border-box'};
 
   return (
-    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',,display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
+    <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage&&bgImage2)?`url(${bgImage}), url(${bgImage2})`:(bgImage?`url(${bgImage})`:(bgImage2?`url(${bgImage2})`:'none')), backgroundSize:'50% 100%, 50% 100%', backgroundPosition:(bgImage&&bgImage2)?'left center, right center':(bgImage?'left center':'right center'), backgroundRepeat:'no-repeat', backgroundAttachment:'fixed',display:'flex',justifyContent:'center',padding:'2rem 1rem',...f}}>
       <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:1000,alignSelf:'flex-start',overflow:'hidden'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
