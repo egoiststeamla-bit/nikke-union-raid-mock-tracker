@@ -581,12 +581,12 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
           </div>
         </div>
 
-        <div id="boss-tabs-row" style={{display:'flex',gap:6,padding:'0 1rem 1rem',flexWrap:'nowrap'}}>
+        <div style={{display:'inline-flex',gap:6,padding:'0 1rem 1rem'}}>
           {Array(BOSSES).fill(0).map((_,bi)=>{
             const best=Math.max(0,...data.runs[bi].map(r=>parseFloat(r.damage)||0));
             const ba=bossActualCount(data,bi);
-            return <button key={bi} onClick={()=>setBoss(bi)} style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,padding:'6px 8px',borderRadius:8,cursor:'pointer',flex:'1 1 0',minWidth:0,border:`1px solid ${bi===boss?'#4a5280':C.bdr}`,background:bi===boss?C.surf2:'transparent',color:C.txt}}>
-              <span style={{fontSize:11,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'100%'}}>{bossNames[bi]}</span>
+            return <button key={bi} onClick={()=>setBoss(bi)} style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,padding:'6px 12px',borderRadius:8,cursor:'pointer',flex:'0 0 auto',border:`1px solid ${bi===boss?'#4a5280':C.bdr}`,background:bi===boss?C.surf2:'transparent',color:C.txt}}>
+              <span style={{fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}>{bossNames[bi]}</span>
               <span style={{fontSize:10,display:'flex',alignItems:'center',gap:4}}>
                 <span style={{color:best>0?C.grn:C.mut}}>{best>0?fmt(best):'—'}</span>
                 {ba>0&&<span style={{color:C.gld}}>✓{ba}</span>}
@@ -644,10 +644,10 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
                     </select>;
                   })}
                 </div>
-                <div style={{display:'flex',alignItems:'center',gap:6,padding:'7px 12px',borderTop:`1px solid ${C.bdr}`,flexWrap:'wrap'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',borderTop:`1px solid ${C.bdr}`}}>
                   <input placeholder='Remark (e.g. Burst with xx first)' value={run.remark || ''} onChange={e=>upd(['runs',boss,ri,'remark'], e.target.value)} style={{flex: 1, fontSize:12, padding:'5px 8px', borderRadius:6, border:`1px solid ${C.bdr}`, background:C.surf2, color:C.mut}} />
                   <span style={{fontSize:11,color:C.mut, marginLeft: 8}}>Damage</span>
-                  <input type='number' placeholder='Enter damage in millions' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{flex: 1, minWidth: 80, width: 'auto', fontSize:12, padding:'5px 8px', borderRadius:6, textAlign:'right', border:`1px solid ${C.bdr}`, background:C.surf, color:C.txt}}
+                  <input type='number' placeholder='Enter damage in millions' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{width: 170, fontSize:12, padding:'5px 8px', borderRadius:6, textAlign:'right', border:`1px solid ${C.bdr}`, background:C.surf, color:C.txt}}
                     onChange={e=>{const v=e.target.value;upd(['runs',boss,ri,'damage'],v?String(parseFloat(v)*1_000_000):'');}}/>
                   <span style={{fontSize:11,color:C.mut}}>M</span>
                 </div>
@@ -758,7 +758,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
 
   if(!unlocked) return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
-      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,width:'100%',maxWidth:400,overflow:'hidden'}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'0 0 auto',width:'fit-content',minWidth:400,maxWidth:680,overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>🛡</div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin — {unionName}</h1>
