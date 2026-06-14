@@ -308,7 +308,7 @@ export default function App() {
   if (view === 'sync') return <SyncView name={member} onConfirm={async (lvl) => { await saveSync(member, lvl); setView('member'); }} onBack={() => { setMember(null); setView('login'); }} bgImage={unionBG} bgImage2={unionBG2} />;
   if (view === 'admin') return <AdminView allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} unionName={activeUnion.name} onBack={() => setView('login')} onOverride={save} onSaveBN={saveBN} onSaveMembers={saveMems} onWipe={wipe} onExport={() => exportCSV(allData, bossNames, members, syncLevels, activeUnion.name)} getData={getData} onSaveSyncLevel={saveSync} onSaveBG={saveBG} bgImage={unionBG} bgImage2={unionBG2} onSaveBG2={saveBG2} security={security} accessCode={accessCode} onSaveAccessCode={saveAccessCode} adminPasswordHash={adminPasswordHash} onSaveAdminPassword={saveAdminPassword} />;
   if (view === 'code') return <CodeView unionName={activeUnion.name} accessCode={accessCode} bgImage={unionBG} bgImage2={unionBG2} onSuccess={() => setView('login')} onBack={() => { setActiveUnion(null); setView('home'); }} />;
-  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d => save(member, d)} onBack={handleBack} bgImage={unionBG} bgImage2={unionBG2} onRefresh={refreshData/>;
+  return <MemberView name={member} data={getData(member)} bossNames={bossNames} allData={allData} members={members} syncLevels={syncLevels} saving={saving} onSave={d => save(member, d)} onBack={handleBack} bgImage={unionBG} bgImage2={unionBG2} onRefresh={refreshData} />;
 }
 
 // ── Home: pick your union ─────────────────────────────────────────────────────
