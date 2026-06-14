@@ -559,7 +559,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,backgroundImage:(bgImage||bgImage2)?`url(${bgImage||''}), url(${bgImage2||bgImage||''})`:'none',backgroundSize:'50% 100%, 50% 100%',backgroundPosition:'left center, right center',backgroundRepeat:'no-repeat',backgroundAttachment:'fixed',display:'flex',gap:16,padding:'2rem 1rem',alignItems:'flex-start',justifyContent:'center',...f}}>
-      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'1 1 400px',maxWidth:680,overflow:'hidden'}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flexShrink:0,width:'fit-content',minWidth:400,overflow:'hidden',display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'1.25rem 1rem 0.75rem',flexWrap:'wrap',gap:8}}>
           <div>
             <button style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:C.mut,padding:'0 0 4px',display:'block'}} onClick={onBack}>← back</button>
@@ -581,7 +581,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
           </div>
         </div>
 
-        <div style={{display:'inline-flex',gap:6,padding:'0 1rem 1rem'}}>
+        <div style={{display:'flex',gap:6,padding:'0 1rem 1rem',width:'max-content'}}>
           {Array(BOSSES).fill(0).map((_,bi)=>{
             const best=Math.max(0,...data.runs[bi].map(r=>parseFloat(r.damage)||0));
             const ba=bossActualCount(data,bi);
