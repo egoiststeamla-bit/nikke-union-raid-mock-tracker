@@ -669,8 +669,10 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
   const [hideConflicts,setHideConflicts]=useState(false);
   const [minDamage,setMinDamage]=useState('');
   const [hideActualUsed,setHideActualUsed]=useState(false);
+  const [hideMaxActual,setHideMaxActual]=useState(false);
   const rows=members.map(m=>{
     const d=allData[m]??emptyData();
+    if(hideMaxActual&&totalActuals(d)>=MAX_ACTUAL) return null;
     const gu=allActualUnits(d);
     const runs=d.runs[activeBoss].filter(r=>!r.excluded&&r.damage).map(r=>({...r,hasConflict:r.units.some(u=>u&&gu.has(u)&&!r.isActual)}));
     let vis=hideConflicts?runs.filter(r=>!r.hasConflict):runs;
@@ -693,6 +695,9 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
         </label>
         <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer',flexShrink:0}}>
           <input type='checkbox' checked={hideActualUsed} onChange={e=>setHideActualUsed(e.target.checked)}/> Hide actual
+        </label>
+        <label style={{fontSize:11,color:C.mut,display:'flex',alignItems:'center',gap:4,cursor:'pointer',flexShrink:0}}>
+          <input type='checkbox' checked={hideMaxActual} onChange={e=>setHideMaxActual(e.target.checked)}/> Hide 3/3
         </label>
       </div>
     </div>
@@ -739,6 +744,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   };
   const [boss,setBoss]=useState(0),[minDmg,setMinDmg]=useState('');
   const [hideActualUsed,setHideActualUsed]=useState(false);
+  const [hideMaxActual,setHideMaxActual]=useState(false);
   const [editMember,setEditMember]=useState(null);
   const [editBN,setEditBN]=useState(false),[draftBN,setDraftBN]=useState([...bossNames]);
   const [editMems,setEditMems]=useState(false),[draftMems,setDraftMems]=useState(members.join('\n'));
@@ -780,6 +786,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
   const minV=(parseFloat(minDmg)||0)*1_000_000;
   const qualified=minV>0?rows.flatMap(({m,valid,d})=>{
     if(hideActualUsed&&d.runs[boss].some(r=>r.isActual)) return [];
+    if(hideMaxActual&&totalActuals(d)>=MAX_ACTUAL) return [];
     return valid.filter(r=>(parseFloat(r.damage)||0)>=minV).map(r=>({name:m,dmg:parseFloat(r.damage),units:r.units.filter(Boolean),isActual:r.isActual}));
   }).sort((a,b)=>b.dmg-a.dmg):[];
   const smBtn={padding:'5px 12px',fontSize:12,background:'transparent',color:C.mut,border:`1px solid ${C.bdr}`,borderRadius:6,cursor:'pointer'};
@@ -897,7 +904,10 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
           <input type='number' placeholder='Damage (millions)' value={minDmg} style={{flex:1,fontSize:12,padding:'5px 8px',borderRadius:6,textAlign:'right',border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt,minWidth:160}} onChange={e=>setMinDmg(e.target.value)}/>
           <span style={{fontSize:11,color:C.mut}}>M</span>
           <label style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:C.mut,cursor:'pointer'}}>
-            <input type='checkbox' checked={hideActualUsed} onChange={e=>setHideActualUsed(e.target.checked)}/> Hide members who already did actual run
+            <input type='checkbox' checked={hideActualUsed} onChange={e=>setHideActualUsed(e.target.checked)}/> Hide members who did actual run for this boss
+          </label>
+          <label style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:C.mut,cursor:'pointer'}}>
+            <input type='checkbox' checked={hideMaxActual} onChange={e=>setHideMaxActual(e.target.checked)}/> Hide 3/3
           </label>
           {qualified.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8,width:'100%'}}>
             {qualified.map((q,i)=><div key={i} style={{display:'flex',flexDirection:'column',gap:4,padding:'10px 12px',background:'#0d2818',border:`1px solid ${q.isActual?C.gld:'#4ade8040'}`,borderRadius:8,fontSize:12,color:C.txt,minWidth:160}}>
@@ -920,7 +930,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
               ))}</tr>
             </thead>
             <tbody>
-              {rows.sort((a,b)=>(b.best||0)-(a.best||0)).map(({m,bRuns,gu,bu,tot,best},i)=>(
+              {rows.filter(r=>!hideMaxActual||r.tot<MAX_ACTUAL).sort((a,b)=>(b.best||0)-(a.best||0)).map(({m,bRuns,gu,bu,tot,best},i)=>(
                 <tr key={m} style={{background:i%2===0?'transparent':'rgba(255,255,255,0.02)',verticalAlign:'top'}}>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,fontWeight:700}}>{m}</td>
                   <td style={{padding:'6px',borderBottom:`1px solid ${C.bdr}`,color:C.txt,textAlign:'center'}}>{syncLevels[m]||'—'}</td>
