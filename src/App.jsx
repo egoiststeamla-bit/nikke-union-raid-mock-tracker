@@ -274,6 +274,11 @@ export default function App() {
   const wipe = async() => { setAll({}); setSyncLevels({}); await persist({},bossNames,members,{}); };
   const getData = n => allData[n]??emptyData();
 
+  const refreshData = async () => {
+    const p = await loadUnion(activeUnion.id);
+    if (p) setAll(p.data || {});
+  };
+
   const handleUnionSelect = (union) => {
     setActiveUnion(union);
     setView('code');
@@ -526,7 +531,7 @@ function CodeView({unionName,accessCode,bgImage,bgImage2,onSuccess,onBack}) {
   );
 }
 
-function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit,bgImage,bgImage2}) {
+function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSave,onBack,onSyncEdit,bgImage,bgImage2,onRefresh}) {
   const [boss,setBoss]=useState(0);
   const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
@@ -659,14 +664,17 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
       </div>
 
       <div style={{flex:'1 1 260px',minWidth:240,maxWidth:380,position:'sticky',top:'2rem',height:'calc(100vh - 4rem)',background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        <OverviewPanel allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} activeBoss={boss}/>
+        <OverviewPanel allData={allData} bossNames={bossNames} members={members} syncLevels={syncLevels} activeBoss={boss} onRefresh={onRefresh}/>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
-function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
+function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss,onRefresh}) {   
+  const [refreshing,setRefreshing]=useState(false);   
+  const handleRefresh = async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); };
+  
   const [expand,setExpand]=useState(null);
   const [hideConflicts,setHideConflicts]=useState(false);
   const [minDamage,setMinDamage]=useState('');
@@ -688,7 +696,12 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
 
   return <>
     <div style={{padding:'10px 12px 8px',borderBottom:`1px solid ${C.bdr}`,flexShrink:0}}>
-      <span style={{fontSize:11,fontWeight:700,color:C.mut,textTransform:'uppercase',letterSpacing:1}}>Overview — {bossNames[activeBoss]}</span>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <span style={{fontSize:11,fontWeight:700,color:C.mut,textTransform:'uppercase',letterSpacing:1}}>Overview — {bossNames[activeBoss]}</span>
+        <button onClick={handleRefresh} disabled={refreshing} style={{fontSize:13,padding:'2px 7px',borderRadius:6,cursor:refreshing?'not-allowed':'pointer',background:'transparent',color:refreshing?C.mut:C.txt,border:`1px solid ${C.bdr}`,lineHeight:1}}>
+          ↻
+        </button>
+      </div>
       <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8}}>
         <input type='number' placeholder='Min dmg' value={minDamage} onChange={e=>setMinDamage(e.target.value)} style={{flex:1,minWidth:0,fontSize:11,padding:'4px 6px',borderRadius:6,border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt}}/>
         <span style={{fontSize:11,color:C.mut,flexShrink:0}}>M</span>
