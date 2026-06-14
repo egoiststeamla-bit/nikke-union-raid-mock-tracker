@@ -644,9 +644,9 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
                   })}
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',borderTop:`1px solid ${C.bdr}`}}>
-                  <input placeholder='Remark (e.g. Needs healer)' value={run.remark || ''} onChange={e=>upd(['runs',boss,ri,'remark'], e.target.value)} style={{flex: 1, fontSize:12, padding:'5px 8px', borderRadius:6, border:`1px solid ${C.bdr}`, background:C.surf2, color:C.mut}} />
+                  <input placeholder='Remark (e.g. Burst with xx first)' value={run.remark || ''} onChange={e=>upd(['runs',boss,ri,'remark'], e.target.value)} style={{flex: 1, fontSize:12, padding:'5px 8px', borderRadius:6, border:`1px solid ${C.bdr}`, background:C.surf2, color:C.mut}} />
                   <span style={{fontSize:11,color:C.mut, marginLeft: 8}}>Damage</span>
-                  <input type='number' placeholder='Enter damage in millions' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{flex:1,fontSize:12,padding:'5px 8px',borderRadius:6,textAlign:'right',border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt}}
+                  <input type='number' placeholder='Dmg' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{width: 80, fontSize:12, padding:'5px 8px', borderRadius:6, textAlign:'right', border:`1px solid ${C.bdr}`, background:C.surf, color:C.txt}}
                     onChange={e=>{const v=e.target.value;upd(['runs',boss,ri,'damage'],v?String(parseFloat(v)*1_000_000):'');}}/>
                   <span style={{fontSize:11,color:C.mut}}>M</span>
                 </div>
@@ -720,7 +720,7 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
                   {run.isActual&&<span style={{fontSize:9,color:C.gld,flexShrink:0}}>✓ACT</span>}
                 </div>
               </div>
-              {run.remark && <span style={{fontSize: 11, color: C.mut, fontStyle: 'italic', paddingLeft: 26}}>"{run.remark}"</span>}
+              {run.remark && <span style={{fontSize: 11, color: C.red, fontStyle: 'italic', paddingLeft: 26}}>{run.remark}</span>}
             </div>)}
           </div>}
         </div>;
