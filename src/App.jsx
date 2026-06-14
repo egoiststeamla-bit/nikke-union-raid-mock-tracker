@@ -624,7 +624,6 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
                   {run.damage&&<span style={{fontSize:12,fontWeight:700,color:C.grn,padding:'1px 8px',background:'#0d2818',borderRadius:999}}>{fmt(run.damage)}</span>}
                   {run.isActual&&<span style={{fontSize:11,color:C.gld,padding:'1px 8px',background:'#2d2000',borderRadius:999}}>✓ Actual</span>}
                   {anyConflict&&!run.isActual&&<span style={{fontSize:11,color:C.red,padding:'1px 8px',background:'#2d0f0f',borderRadius:999}}>⚠ locked units</span>}
-                  {blocked&&!run.isActual&&<span style={{fontSize:11,color:C.red,padding:'1px 8px',background:'#2d0f0f',borderRadius:999}}>⚠ can't mark — unit locked</span>}
                   <label style={{display:'flex',alignItems:'center',gap:5,marginLeft:'auto',opacity:!run.isActual&&!canCheck?0.3:1,cursor:!run.isActual&&!canCheck?'not-allowed':'pointer'}}>
                     <input type='checkbox' checked={run.isActual} disabled={!run.isActual&&!canCheck} onChange={()=>{if(run.isActual){upd(['runs',boss,ri,'isActual'],false);return;}if(!canCheck)return;upd(['runs',boss,ri,'isActual'],true);}}/>
                     <span style={{fontSize:11,color:run.isActual?C.gld:blocked?C.red:C.mut}}>Actual run</span>
@@ -646,7 +645,7 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
                 <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',borderTop:`1px solid ${C.bdr}`}}>
                   <input placeholder='Remark (e.g. Burst with xx first)' value={run.remark || ''} onChange={e=>upd(['runs',boss,ri,'remark'], e.target.value)} style={{flex: 1, fontSize:12, padding:'5px 8px', borderRadius:6, border:`1px solid ${C.bdr}`, background:C.surf2, color:C.mut}} />
                   <span style={{fontSize:11,color:C.mut, marginLeft: 8}}>Damage</span>
-                  <input type='number' placeholder='Dmg' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{width: 80, fontSize:12, padding:'5px 8px', borderRadius:6, textAlign:'right', border:`1px solid ${C.bdr}`, background:C.surf, color:C.txt}}
+                  <input type='number' placeholder='Enter damage in millions' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{width: 170, fontSize:12, padding:'5px 8px', borderRadius:6, textAlign:'right', border:`1px solid ${C.bdr}`, background:C.surf, color:C.txt}}
                     onChange={e=>{const v=e.target.value;upd(['runs',boss,ri,'damage'],v?String(parseFloat(v)*1_000_000):'');}}/>
                   <span style={{fontSize:11,color:C.mut}}>M</span>
                 </div>
