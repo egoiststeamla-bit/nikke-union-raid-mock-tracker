@@ -758,7 +758,7 @@ function AdminView({allData,bossNames,members,syncLevels,unionName,onBack,onOver
 
   if(!unlocked) return (
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',...f}}>
-      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flex:'0 0 auto',width:'fit-content',minWidth:400,overflow:'hidden'}}>
+      <div style={{background:C.surf,border:`1px solid ${C.bdr}`,borderRadius:16,flexShrink:0,minWidth:'max-content',overflow:'hidden'}}>
         <div style={{background:C.surf2,padding:'2rem',textAlign:'center',borderBottom:`1px solid ${C.bdr}`}}>
           <div style={{fontSize:40,marginBottom:8}}>🛡</div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.txt,margin:0}}>Admin — {unionName}</h1>
