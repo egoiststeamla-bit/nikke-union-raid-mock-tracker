@@ -15,8 +15,9 @@ const DEFAULT_UNIONS = [
 
 const UNITS = ['2B','A2','Ada Wong','Ade','Ade: Agent Bunny','Admi','Alice','Alice: Wonderland Bunny','Anchor','Anchor: Innocent Maid','Anis','S. Anis','Anis: Star','Anne: Miracle Fairy','Arcana','Arcana: Fortune Mate','Aria','Asuka Shikinami Langley','Asuka Shikinami Langley: Wille','Avistar','Bay','Bay (Treasure)','Belorta','Biscuit','Blanc','Bready','Brid','Brid: Silent Track','Centi','Centi (Treasure)','Chime','Chisato Nishikigi','Cinderella','Claire Redfield','Clay','Cocoa','Crow','Crown','Crust','D','D: Killer Wife','Delta','Delta: Ninja Thief','Diesel','Diesel (Treasure)','Diesel: Winter Sweets','Dolla','Dorothy','Dorothy: Serendipity','Drake','Drake (Treasure)','E.H.','Ein','Elegg','Elegg: Boom and Shock','Emilia','Emma','Emma: Tactical Upgrade','Epinel','Ether','Eunhwa','Eunhwa: Tactical Upgrade','Eve','Exia','Exia (Treasure)','Flora','Folkwang','Frima','Frima (Treasure)','Grave','Guillotine','Guillotine: Winter Slayer','Guilty','Harran','Helm','Helm (Treasure)','Helm: Aquamarine','Himeno','Isabel','Jackal','Jill Valentine','Julia','Julia (Treasure)','K','Kilo','Kurumi','Label','Laplace','Laplace (Treasure)','Leona','Liberalio','Lily','Liter','Little Mermaid (Siren)','Ludmilla','Ludmilla: Winter Owner','Maiden','Maiden: Ice Rose','Makima','Mana','Marciana','Mari Makinami Illustrious','Mary','Mary: Bay Goddess','Mast','Mast: Romantic Maid','Maxwell','Mica','Mica: Snow Buddy','Mihara','Mihara: Bonding Chain','Milk','Milk (Treasure)','Milk: Blooming Bunny','Mint','Miranda','Miranda (Treasure)','Misato Katsuragi','Modernia','Moran','Moran (Treasure)','Mori','N102','Naga','Nayuta','Neon','Neon: Blue Ocean','Neon: Vision Eye','Nero','Neve','Nihilister','Noah','Noir','Noise','Novel','Pascal','Pepper','Phantom','Poli','Poli (Treasure)','Power','Prika','Privaty','Privaty (Treasure)','Privaty: Unkind Maid','Product 08','Product 12','Product 23','Quency','Quency: Escape Queen','Quiry','RH','Ram','Rapi','Rapi: Red Hood','Rapunzel','Rapunzel: Pure Grace','Raven','Red Hood','Rei','Rei Ayanami','Rei Ayanami (Tentative Name)','Rem','Rosanna','Rosanna: Chic Ocean','Rouge','Rumani','Rupee','Rupee: Winter Shopper','SBS','SW','Sakura','Sakura: Bloom in Summer','Scarlet','Scarlet: Black Shadow','Signal','Snow Crane','Snow White','Snow White: Heavy Arms','Soda','Soline','Soline: Frost Ticket','Sugar','Tia','Tove','Tove (Treasure)','Velvet','Vesti','Viper','Viper (Treasure)','Zwei','Zwei (Treasure)'];
 
-const emptyRun = () => ({ units: Array(UPR).fill(''), damage: '', excluded: false, isActual: false });
-const emptyData = () => ({ runs: Array(BOSSES).fill(null).map(() => [emptyRun(),emptyRun(),emptyRun(),emptyRun(),emptyRun()]), doubleHit: Array(BOSSES).fill(false) });
+//rev2, added remark in emptyRun, switched to default only 1 emptyRun() in emptyData
+const emptyRun = () => ({ units: Array(UPR).fill(''), damage: '', excluded: false, isActual: false, remark: '' });
+const emptyData = () => ({ runs: Array(BOSSES).fill(null).map(() => [emptyRun()]), doubleHit: Array(BOSSES).fill(false) });
 
 const fmt = (n) => { const v=parseFloat(n); if(!v||isNaN(v)) return ''; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return v.toLocaleString(); };
 const allActualUnits = (d) => { const s=new Set(); d.runs.flat().forEach(r=>{if(r.isActual)r.units.forEach(u=>u&&s.add(u));}); return s; };
@@ -66,7 +67,8 @@ const loadUnion = async (unionId) => {
             doubleHit: d.doubleHit || Array(BOSSES).fill(false),
             runs: Array.from({ length: BOSSES }, (_, bi) => {
               const bossRuns = d.runs?.[`boss_${bi}`] || {};
-              return Array.from({ length: Math.max(Object.keys(bossRuns).length, UPR) }, (_, ri) =>
+              //keys(bossRuns).length, UPD -> 1
+              return Array.from({ length: Math.max(Object.keys(bossRuns).length, 1) }, (_, ri) =>
                 bossRuns[`run_${ri}`] || emptyRun()
               );
             })
@@ -528,6 +530,27 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
   const [boss,setBoss]=useState(0);
   const [syncVal,setSyncVal]=useState(syncLevels[name]||'');
   const upd=(path,val)=>onSave(deepSet(data,path,val));
+
+  //rev2
+  // --- NEW LOGIC FOR DUPLICATE AND MOVE ---
+  const duplicateRun = (ri) => {
+    const d = JSON.parse(JSON.stringify(data));
+    const copiedRun = JSON.parse(JSON.stringify(d.runs[boss][ri]));
+    copiedRun.isActual = false; // Reset actual status on the copy
+    d.runs[boss].push(copiedRun); // Add to the bottom
+    onSave(d);
+  };
+
+  const moveRun = (ri, direction) => {
+    if (ri + direction < 0 || ri + direction >= data.runs[boss].length) return;
+    const d = JSON.parse(JSON.stringify(data));
+    const temp = d.runs[boss][ri];
+    d.runs[boss][ri] = d.runs[boss][ri + direction];
+    d.runs[boss][ri + direction] = temp;
+    onSave(d);
+  };
+  // ----------------------------------------
+  
   const gu=allActualUnits(data),tot=totalActuals(data),dh=data.doubleHit[boss];
   const bAct=bossActualCount(data,boss),maxB=dh?2:1;
   const bu=bossActualUnits(data,boss);
@@ -588,10 +611,16 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
             const anyConflict=run.units.some(u=>u&&(gBad(u)||iBad(u)));
             const blocked=runIsBlocked(run,data,boss,ri);
             const canCheck=!run.isActual&&tot<MAX_ACTUAL&&bAct<maxB&&!blocked;
+            //rev2, replaced <span style={{fontSize:11,fontWeight:700,color:C.mut,textTransform:'uppercase',letterSpacing:1}}>Run {ri+1}</span>
             return (
               <div key={ri} style={{background:run.isActual?'#1a1500':C.surf2,border:`1px solid ${run.isActual?C.gld+'60':C.bdr}`,borderRadius:10,overflow:'hidden',opacity:run.excluded?0.45:1}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 12px',borderBottom:`1px solid ${C.bdr}`,flexWrap:'wrap'}}>
                   <span style={{fontSize:11,fontWeight:700,color:C.mut,textTransform:'uppercase',letterSpacing:1}}>Run {ri+1}</span>
+                    <div style={{display:'flex', gap: 6, marginLeft: 8}}>
+                      <button onClick={() => moveRun(ri, -1)} disabled={ri === 0} style={{padding: '2px 6px', fontSize: 10, background: C.surf, color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 4, cursor: ri === 0 ? 'not-allowed' : 'pointer'}}>↑</button>
+                      <button onClick={() => moveRun(ri, 1)} disabled={ri === data.runs[boss].length - 1} style={{padding: '2px 6px', fontSize: 10, background: C.surf, color: C.mut, border: `1px solid ${C.bdr}`, borderRadius: 4, cursor: ri === data.runs[boss].length - 1 ? 'not-allowed' : 'pointer'}}>↓</button>
+                      <button onClick={() => duplicateRun(ri)} style={{padding: '2px 8px', fontSize: 10, background: '#1a2e35', color: '#38bdf8', border: `1px solid #0369a1`, borderRadius: 4, cursor: 'pointer'}}>⧉ Duplicate</button>
+                    </div>
                   {run.damage&&<span style={{fontSize:12,fontWeight:700,color:C.grn,padding:'1px 8px',background:'#0d2818',borderRadius:999}}>{fmt(run.damage)}</span>}
                   {run.isActual&&<span style={{fontSize:11,color:C.gld,padding:'1px 8px',background:'#2d2000',borderRadius:999}}>✓ Actual</span>}
                   {anyConflict&&!run.isActual&&<span style={{fontSize:11,color:C.red,padding:'1px 8px',background:'#2d0f0f',borderRadius:999}}>⚠ locked units</span>}
@@ -615,7 +644,8 @@ function MemberView({name,data,bossNames,allData,members,syncLevels,saving,onSav
                   })}
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 12px',borderTop:`1px solid ${C.bdr}`}}>
-                  <span style={{fontSize:11,color:C.mut,minWidth:52}}>Damage</span>
+                  <input placeholder='Remark (e.g. Needs healer)' value={run.remark || ''} onChange={e=>upd(['runs',boss,ri,'remark'], e.target.value)} style={{flex: 1, fontSize:12, padding:'5px 8px', borderRadius:6, border:`1px solid ${C.bdr}`, background:C.surf2, color:C.mut}} />
+                  <span style={{fontSize:11,color:C.mut, marginLeft: 8}}>Damage</span>
                   <input type='number' placeholder='Enter damage in millions' value={run.damage?Math.round(parseFloat(run.damage)/1_000_000):''} style={{flex:1,fontSize:12,padding:'5px 8px',borderRadius:6,textAlign:'right',border:`1px solid ${C.bdr}`,background:C.surf,color:C.txt}}
                     onChange={e=>{const v=e.target.value;upd(['runs',boss,ri,'damage'],v?String(parseFloat(v)*1_000_000):'');}}/>
                   <span style={{fontSize:11,color:C.mut}}>M</span>
@@ -680,14 +710,17 @@ function OverviewPanel({allData,bossNames,members,syncLevels,activeBoss}) {
           </div>
           {isExp&&<div style={{padding:'4px 10px 8px',display:'flex',flexDirection:'column',gap:4}}>
             {valid.length===0&&<p style={{fontSize:11,color:C.mut,margin:0}}>No valid runs.</p>}
-            {valid.map((run,ri)=><div key={ri} style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',padding:'4px 6px',background:C.surf2,borderRadius:6,border:`1px solid ${run.isActual?C.gld+'60':C.bdr}`}}>
-              <span style={{fontSize:10,color:C.mut,flexShrink:0,minWidth:20}}>R{ri+1}</span>
-              <span style={{fontSize:11,fontWeight:700,color:run.isActual?C.gld:C.grn,flexShrink:0}}>{fmt(run.damage)}</span>
-              <div style={{display:'flex',flexWrap:'wrap',gap:2,flex:1}}>{run.units.filter(Boolean).map((u,ui)=><span key={ui} style={pill(C.surf2,C.txt)}>{u}</span>)}</div>
-              <div style={{display:'flex',alignItems:'center',gap:4}}>
-                {run.hasConflict&&<span style={{fontSize:9,color:C.red,flexShrink:0}}>🚫REPEAT</span>}
-                {run.isActual&&<span style={{fontSize:9,color:C.gld,flexShrink:0}}>✓ACT</span>}
+            {valid.map((run,ri)=><div key={ri} style={{display:'flex',flexDirection:'column',gap:4,padding:'4px 6px',background:C.surf2,borderRadius:6,border:`1px solid ${run.isActual?C.gld+'60':C.bdr}`}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                <span style={{fontSize:10,color:C.mut,flexShrink:0,minWidth:20}}>R{ri+1}</span>
+                <span style={{fontSize:11,fontWeight:700,color:run.isActual?C.gld:C.grn,flexShrink:0}}>{fmt(run.damage)}</span>
+                <div style={{display:'flex',flexWrap:'wrap',gap:2,flex:1}}>{run.units.filter(Boolean).map((u,ui)=><span key={ui} style={pill(C.surf2,C.txt)}>{u}</span>)}</div>
+                <div style={{display:'flex',alignItems:'center',gap:4}}>
+                  {run.hasConflict&&<span style={{fontSize:9,color:C.red,flexShrink:0}}>🚫REPEAT</span>}
+                  {run.isActual&&<span style={{fontSize:9,color:C.gld,flexShrink:0}}>✓ACT</span>}
+                </div>
               </div>
+              {run.remark && <span style={{fontSize: 11, color: C.mut, fontStyle: 'italic', paddingLeft: 26}}>"{run.remark}"</span>}
             </div>)}
           </div>}
         </div>;
